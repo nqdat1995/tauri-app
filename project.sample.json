@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "id": "64e77839-3fe3-419b-a7dd-228d520ba83d",
+  "project_type": "video",
+  "name": "dd6e9790-0009-4514-a357-c55491dc0475.mp4",
+  "status": "completed",
+  "created_at": "2026-06-23T13:54:23.839Z",
+  "updated_at": "2026-06-23T13:56:53.241Z",
+  "source": {
+    "mode": "linked",
+    "path": "D:\\LEARN\\video-to-srt\\tmp_files\\uploads\\dd6e9790-0009-4514-a357-c55491dc0475.mp4",
+    "size": 6187598,
+    "modified_at": null,
+    "fingerprint": null
+  },
+  "media": {
+    "duration": 13.066667,
+    "width": 2160,
+    "height": 3840,
+    "fps": 60.0,
+    "codec": "hevc",
+    "audio_codec": "aac"
+  },
+  "processing": {
+    "started_at": "2026-06-23T13:56:22.599Z",
+    "completed_at": "2026-06-23T13:56:53.241Z",
+    "duration_ms": 30642
+  }
+}
