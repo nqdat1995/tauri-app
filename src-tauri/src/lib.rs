@@ -1,15 +1,24 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-mod commands;
-mod orchestrator;
+// Module declarations — order matters for forward references (state uses job::models)
+mod job;       // must be declared before state so crate::job::models is resolvable
+mod state;
+mod sidecar;
+mod stt;
+mod project;
 mod storage;
+mod translation;
+mod commands;
 
-use commands::{greet, save_project, enqueue_job, cancel_pending_jobs, start_sidecar, get_file_metadata};
-use orchestrator::{AppState, ensure_sidecar_running_pub};
+use commands::{
+    cancel_pending_jobs, enqueue_job, get_file_metadata, greet, save_project, start_sidecar,
+    translate_project,
+};
+use sidecar::ensure_sidecar_running_pub;
+use state::AppState;
 use std::sync::Arc;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() -> () {
+pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -25,7 +34,15 @@ pub fn run() -> () {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, save_project, enqueue_job, cancel_pending_jobs, start_sidecar, get_file_metadata])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            save_project,
+            enqueue_job,
+            cancel_pending_jobs,
+            start_sidecar,
+            get_file_metadata,
+            translate_project
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
