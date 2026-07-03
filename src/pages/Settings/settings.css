@@ -1,5 +1,5 @@
 .settings-page {
-  max-width: 780px;
+  /* no max-width — use full available space like other tabs */
 }
 
 .settings-loading {
@@ -177,8 +177,22 @@
   gap: 0 24px;
 }
 
+/* ── 3-col grid for provider section ── */
+.settings-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0 24px;
+}
+
+@media (max-width: 900px) {
+  .settings-grid-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 @media (max-width: 600px) {
-  .settings-grid-2 {
+  .settings-grid-2,
+  .settings-grid-3 {
     grid-template-columns: 1fr;
   }
 }

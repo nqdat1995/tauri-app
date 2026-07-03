@@ -73,3 +73,9 @@ export type AppSettings = {
   target_language: string;
   chunk_size: number;
 };
+
+/** Model info returned by list_models command */
+export type ModelInfo = {
+  id: string;
+  name: string;
+};

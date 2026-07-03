@@ -235,3 +235,43 @@ Files chỉnh sửa:
 **Context**: INCEPTION → CONSTRUCTION. Root cause analysis in progress.
 
 ---
+
+## Bug Fix Plan — Approved & Code Generation Complete
+**Timestamp**: 2026-07-03T11:30:00Z
+**User Input**: "Approve & Continue"
+**AI Response**: User approved Bug Fix Plan. Proceeding to Code Generation — executing all fixes.
+**Context**: CONSTRUCTION - Code Generation for bug fixes.
+
+Root Cause Analysis:
+- Bug 1: Path mismatch — `load_history` đọc `projects/{id}.json` nhưng `create_project` ghi vào `projects/{id}/project.json`
+- Bug 2: `.settings-page` có `max-width: 780px` giới hạn chiều rộng
+- Bug 3: `MODELS_BY_PROVIDER` hardcoded trong Settings component
+
+---
+
+## Bug Fix — Code Generation Complete
+**Timestamp**: 2026-07-03T11:45:00Z
+**Build Status**: SUCCESS (cargo check PASSED, tsc --noEmit PASSED, 0 errors)
+**AI Response**: Tất cả 3 bugs đã được fix thành công.
+
+**Bug 1 Fix** — History tab load:
+- `src-tauri/src/storage.rs`: Sửa `project_file_path()` từ `projects/{id}.json` → `projects/{id}/project.json`
+- `src-tauri/src/commands/project.rs`: Thêm `create_dir_if_missing` cho `save_project`
+
+**Bug 2 Fix** — Settings UI layout:
+- `src/pages/Settings/settings.css`: Xóa `max-width: 780px`, thêm `settings-grid-3` class
+- `src/pages/Settings/index.tsx`: Wrap Model + API Key fields trong `settings-grid-2` layout
+
+**Bug 3 Fix** — Dynamic model loading:
+- `src-tauri/src/commands/project.rs`: Thêm `list_models` command (gọi OpenAI/Gemini/DeepSeek APIs qua ureq)
+- `src-tauri/src/commands/mod.rs`: Re-export `list_models`
+- `src-tauri/src/lib.rs`: Register `list_models` trong invoke_handler
+- `src-tauri/Cargo.toml`: Thêm `json` feature cho ureq
+- `src/lib/types.ts`: Thêm `ModelInfo` type
+- `src/lib/tauri.ts`: Thêm `listModels()` wrapper function
+- `src/pages/Settings/index.tsx`: Dynamic model fetch với fallback về hardcoded list
+
+**Files Modified**: 10 files
+**Context**: CONSTRUCTION - Bug Fix Code Generation complete. All 3 issues resolved.
+
+---

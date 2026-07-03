@@ -51,7 +51,8 @@ pub fn read_settings() -> Result<AppSettings, String> {
 
 pub fn project_file_path(project_id: &str) -> Result<PathBuf, String> {
     let mut path = project_storage_dir()?;
-    path.push(format!("{project_id}.json"));
+    path.push(project_id);
+    path.push("project.json");
     Ok(path)
 }
 

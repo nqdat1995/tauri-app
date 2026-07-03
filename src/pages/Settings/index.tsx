@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import type { AppSettings } from "../../lib/types";
-import { isTauriAvailable, loadSettings, saveSettings } from "../../lib/tauri";
+import type { AppSettings, ModelInfo } from "../../lib/types";
+import { isTauriAvailable, loadSettings, saveSettings, listModels } from "../../lib/tauri";
 import "./settings.css";
 
-// Models available per provider
+// Fallback models when API is unavailable
 const MODELS_BY_PROVIDER: Record<string, { value: string; label: string }[]> = {
   openai: [
     { value: "gpt-4o-mini", label: "gpt-4o-mini (Nhanh, tiết kiệm)" },
@@ -54,6 +54,8 @@ export function Settings() {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(true);
+  const [dynamicModels, setDynamicModels] = useState<ModelInfo[] | null>(null);
+  const [modelsLoading, setModelsLoading] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load settings on mount
@@ -67,6 +69,25 @@ export function Settings() {
       .catch(() => { /* use defaults */ })
       .finally(() => setLoading(false));
   }, []);
+
+  // Fetch models from API when provider or api_key changes
+  useEffect(() => {
+    if (!isTauriAvailable() || !settings.api_key.trim()) {
+      setDynamicModels(null);
+      return;
+    }
+    setModelsLoading(true);
+    listModels(settings.provider, settings.api_key)
+      .then((result) => {
+        if (result.length > 0) {
+          setDynamicModels(result);
+        } else {
+          setDynamicModels(null);
+        }
+      })
+      .catch(() => setDynamicModels(null))
+      .finally(() => setModelsLoading(false));
+  }, [settings.provider, settings.api_key]);
 
   // When provider changes, reset model to first option for that provider
   function handleProviderChange(provider: AppSettings["provider"]) {
@@ -97,7 +118,9 @@ export function Settings() {
       });
   }
 
-  const models = MODELS_BY_PROVIDER[settings.provider] ?? [];
+  const models = dynamicModels
+    ? dynamicModels.map((m) => ({ value: m.id, label: m.name }))
+    : (MODELS_BY_PROVIDER[settings.provider] ?? []);
 
   if (loading) {
     return (
@@ -142,47 +165,56 @@ export function Settings() {
           </div>
         </div>
 
-        {/* Model dropdown */}
-        <div className="settings-field">
-          <label>
-            Model
-            <span className="model-tag">{settings.model}</span>
-          </label>
-          <select
-            value={settings.model}
-            onChange={(e) => setSettings((prev) => ({ ...prev, model: e.target.value }))}
-          >
-            {models.map((m) => (
-              <option key={m.value} value={m.value}>{m.label}</option>
-            ))}
-          </select>
-          <span className="field-hint">Chọn model phù hợp với nhu cầu và ngân sách.</span>
-        </div>
-
-        {/* API Key */}
-        <div className="settings-field">
-          <label>API Key</label>
-          <div className="input-wrap">
-            <input
-              type={showKey ? "text" : "password"}
-              value={settings.api_key}
-              placeholder="Nhập API key của nhà cung cấp đã chọn…"
-              onChange={(e) => setSettings((prev) => ({ ...prev, api_key: e.target.value }))}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button
-              type="button"
-              className="toggle-vis"
-              onClick={() => setShowKey((v) => !v)}
-              aria-label={showKey ? "Ẩn API key" : "Hiện API key"}
+        {/* Model & API Key row */}
+        <div className="settings-grid-2">
+          {/* Model dropdown */}
+          <div className="settings-field">
+            <label>
+              Model
+              <span className="model-tag">{settings.model}</span>
+            </label>
+            <select
+              value={settings.model}
+              onChange={(e) => setSettings((prev) => ({ ...prev, model: e.target.value }))}
+              disabled={modelsLoading}
             >
-              {showKey ? "Ẩn" : "Hiện"}
-            </button>
+              {modelsLoading && <option value="">Đang tải danh sách model…</option>}
+              {!modelsLoading && models.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+            <span className="field-hint">
+              {dynamicModels
+                ? `${dynamicModels.length} models từ API`
+                : "Nhập API key để tải danh sách model từ nhà cung cấp."}
+            </span>
+          </div>
+
+          {/* API Key */}
+          <div className="settings-field">
+            <label>API Key</label>
+            <div className="input-wrap">
+              <input
+                type={showKey ? "text" : "password"}
+                value={settings.api_key}
+                placeholder="Nhập API key của nhà cung cấp đã chọn…"
+                onChange={(e) => setSettings((prev) => ({ ...prev, api_key: e.target.value }))}
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button
+                type="button"
+                className="toggle-vis"
+                onClick={() => setShowKey((v) => !v)}
+                aria-label={showKey ? "Ẩn API key" : "Hiện API key"}
+              >
+                {showKey ? "Ẩn" : "Hiện"}
+              </button>
           </div>
           <span className="field-hint">
             Key được lưu cục bộ trên máy, không gửi đến server của chúng tôi.
           </span>
+        </div>
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import type { QueueJobRequest, AppSettings, ProjectRecord } from "./types";
+import type { QueueJobRequest, AppSettings, ProjectRecord, ModelInfo } from "./types";
 
 export async function invokeCommand<T = unknown>(cmd: string, args?: Record<string, unknown>) {
   if (typeof window === "undefined" || !(window as any).__TAURI__) {
@@ -77,4 +77,12 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
  */
 export async function loadHistory(): Promise<ProjectRecord[]> {
   return invokeCommand<ProjectRecord[]>("load_history");
+}
+
+/**
+ * Fetch available models from the AI provider's API.
+ * Returns empty array if API key is missing or call fails.
+ */
+export async function listModels(provider: string, apiKey: string): Promise<ModelInfo[]> {
+  return invokeCommand<ModelInfo[]>("list_models", { provider, apiKey });
 }
