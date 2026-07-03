@@ -227,3 +227,11 @@ Files chỉnh sửa:
 **Context**: CONSTRUCTION - Code Generation complete.
 
 ---
+
+## New Request — Bug Fix Plan (Settings UI + History Load)
+**Timestamp**: 2026-07-03T11:00:00Z
+**User Input**: "Sử dụng AI-DLC, thực hiện lên kế hoạch chỉnh sửa các vấn đề sau: Tab Lịch sử: chưa load được danh sách project từ app_data.json. Tab Cài đặt: giao diện hiển thị chưa đồng nhất với các tab còn lại, phần Nhà cung cấp AI và Tùy chọn dịch thuật chỉ hiển thị được khoảng 1/2 độ rộng của tab, danh sách model nên được load từ API thay vì hardcode."
+**AI Response**: Phân tích 3 vấn đề, lên kế hoạch chi tiết. Đang chờ user approve plan.
+**Context**: INCEPTION → CONSTRUCTION. Root cause analysis in progress.
+
+---
