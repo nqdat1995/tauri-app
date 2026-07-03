@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mockup — Cài đặt & Lịch sử</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f6fb;
+      --surface: #ffffff;
+      --surface-strong: #eef1f9;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --brand: #5b44ff;
+      --brand-soft: rgba(91, 68, 255, 0.12);
+      --border: #e5e7eb;
+      --shadow: 0 24px 80px rgba(99, 102, 241, 0.08);
+      --radius: 14px;
+      --radius-lg: 24px;
+      --success: #10b981;
+      --success-soft: rgba(16, 185, 129, 0.12);
+      --warning: #f59e0b;
+      --warning-soft: rgba(245, 158, 11, 0.12);
+      --danger: #dc2626;
+      --danger-soft: rgba(239, 68, 68, 0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at top left, rgba(91,68,255,0.18), transparent 22%),
+                  radial-gradient(circle at bottom right, rgba(59,130,246,0.1), transparent 22%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    /* ── Layout ── */
+    .app { display: flex; min-height: 100vh; }
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 260px; background: rgba(255,255,255,0.92);
+      border-right: 1px solid rgba(229,231,235,0.95);
+      padding: 28px 22px; display: flex; flex-direction: column; gap: 28px;
+    }
+    .logo h2 { font-size: 1.3rem; letter-spacing: 0.04em; color: var(--brand); }
+    .logo span { color: var(--muted); font-size: 0.95rem; }
+    nav { display: flex; flex-direction: column; gap: 10px; }
+    .menu {
+      border: 0; background: transparent; text-align: left;
+      color: var(--muted); padding: 14px 16px; border-radius: var(--radius);
+      transition: all 0.22s ease; cursor: pointer; font-size: 1rem; width: 100%;
+    }
+    .menu:hover { background: var(--brand-soft); color: var(--brand); }
+    .menu.active {
+      color: var(--brand); background: rgba(91,68,255,0.08);
+      box-shadow: inset 0 0 0 1px rgba(91,68,255,0.12);
+    }
+    .sidebar-footer {
+      margin-top: auto; padding-top: 18px;
+      border-top: 1px solid rgba(229,231,235,0.85);
+      color: var(--muted); font-size: 0.9rem;
+    }
+    /* ── Main ── */
+    main { flex: 1; padding: 32px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    /* ── Page header ── */
+    .page-header {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; margin-bottom: 26px; gap: 20px;
+    }
+    .eyebrow {
+      text-transform: uppercase; letter-spacing: 0.15em;
+      color: var(--brand); font-size: 0.75rem; font-weight: 700; margin-bottom: 10px;
+    }
+    .page-header h1 { font-size: 2rem; line-height: 1.1; }
+    /* ── Card / Panel ── */
+    .card {
+      background: rgba(255,255,255,0.95); border: 1px solid rgba(226,232,240,0.9);
+      border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 28px;
+      margin-bottom: 20px;
+    }
+    .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+    .card-desc { color: var(--muted); font-size: 0.9rem; margin-bottom: 22px; }
+    /* ── Form elements ── */
+    .field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .field label { font-weight: 600; font-size: 0.95rem; color: var(--text); }
+    .field .hint { color: var(--muted); font-size: 0.82rem; }
+    .field select, .field input[type="text"], .field input[type="password"],
+    .field input[type="number"] {
+      padding: 12px 16px; border-radius: var(--radius);
+      border: 1px solid var(--border); background: var(--surface);
+      font: inherit; font-size: 0.95rem; color: var(--text);
+      transition: border-color 0.2s ease; outline: none; width: 100%;
+    }
+    .field select:focus, .field input:focus { border-color: var(--brand); }
+    .field .input-wrap { position: relative; }
+    .field .input-wrap input { padding-right: 80px; }
+    .field .toggle-vis {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      border: none; background: transparent; color: var(--brand);
+      cursor: pointer; font-size: 0.82rem; font-weight: 600;
+    }
+    /* Save button */
+    .btn-primary {
+      background: var(--brand); color: white; padding: 14px 28px;
+      border-radius: 16px; border: none; cursor: pointer; font: inherit;
+      font-weight: 600; font-size: 0.95rem;
+      box-shadow: 0 16px 40px rgba(91,68,255,0.16);
+      transition: opacity 0.2s ease;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+    .save-row { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+    .save-status { font-size: 0.88rem; font-weight: 600; }
+    .save-status.ok { color: var(--success); }
+    .save-status.err { color: var(--danger); }
+    /* Provider badge */
+    .provider-group { display: flex; flex-wrap: wrap; gap: 10px; }
+    .provider-btn {
+      border: 1.5px solid var(--border); background: white; color: var(--text);
+      padding: 12px 20px; border-radius: var(--radius); cursor: pointer;
+      font: inherit; font-size: 0.92rem; transition: all 0.2s ease;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .provider-btn:hover { background: var(--brand-soft); color: var(--brand); border-color: var(--brand); }
+    .provider-btn.selected {
+      background: var(--brand); color: white; border-color: transparent;
+      box-shadow: 0 12px 24px rgba(91,68,255,0.16);
+    }
+    .provider-icon { font-size: 1.1rem; }
+    /* Model tag */
+    .model-tag {
+      display: inline-block; background: var(--brand-soft); color: var(--brand);
+      padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
+      margin-left: 6px; vertical-align: middle;
+    }
+    /* Divider */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+    /* Settings grid */
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+    /* ── History styles ── */
+    .history-toolbar {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .search-input {
+      flex: 1; min-width: 200px; padding: 11px 16px; border-radius: var(--radius);
+      border: 1px solid var(--border); font: inherit; font-size: 0.92rem;
+      outline: none; transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: var(--brand); }
+    .filter-select {
+      padding: 11px 16px; border-radius: var(--radius); border: 1px solid var(--border);
+      font: inherit; font-size: 0.92rem; outline: none; background: white;
+    }
+    .badge-count {
+      background: var(--brand); color: white; padding: 3px 10px;
+      border-radius: 999px; font-size: 0.78rem; font-weight: 700;
+    }
+    /* Project table */
+    .project-table { width: 100%; border-collapse: collapse; }
+    .project-table th {
+      text-align: left; font-size: 0.78rem; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--muted); font-weight: 700;
+      padding: 0 16px 14px; border-bottom: 1px solid var(--border);
+    }
+    .project-table td {
+      padding: 16px; border-bottom: 1px solid rgba(229,231,235,0.6);
+      font-size: 0.92rem; vertical-align: middle;
+    }
+    .project-table tr:last-child td { border-bottom: none; }
+    .project-table tr:hover td { background: rgba(91,68,255,0.03); }
+    .project-name { font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .project-id { color: var(--muted); font-size: 0.78rem; font-family: monospace; }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+    }
+    .status-completed { background: var(--success-soft); color: var(--success); }
+    .status-failed    { background: var(--danger-soft);  color: var(--danger);  }
+    .status-running   { background: var(--brand-soft);   color: var(--brand);   }
+    .status-queued    { background: var(--warning-soft); color: var(--warning); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .thumb {
+      width: 96px; height: 54px; border-radius: 8px; background: #eef2ff;
+      overflow: hidden; display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0; position: relative;
+    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    /* Shimmer skeleton khi ảnh đang load */
+    .thumb-loading {
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, #e0e7ff 25%, #c7d2fe 50%, #e0e7ff 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    /* Fallback icon khi không có thumbnail */
+    .thumb-fallback {
+      font-size: 20px; color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; height: 100%;
+    }
+    /* Badge trên thumbnail: duration */
+    .thumb-duration {
+      position: absolute; bottom: 3px; right: 4px;
+      background: rgba(0,0,0,0.65); color: #fff;
+      font-size: 0.65rem; font-weight: 600; padding: 1px 5px;
+      border-radius: 4px; letter-spacing: 0.02em;
+    }
+    .media-info { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
+    .action-btn {
+      border: 1px solid var(--border); background: white; color: var(--brand);
+      padding: 7px 14px; border-radius: var(--radius); cursor: pointer;
+      font: inherit; font-size: 0.82rem; font-weight: 600;
+      transition: all 0.18s; margin-left: 6px;
+    }
+    .action-btn:hover { background: var(--brand-soft); }
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: var(--muted);
+    }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 16px; }
+    .empty-state p { font-size: 1rem; }
+    /* Pagination */
+    .pagination { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    .page-btn {
+      width: 36px; height: 36px; border-radius: var(--radius); border: 1px solid var(--border);
+      background: white; cursor: pointer; font: inherit; font-size: 0.88rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .page-btn.active { background: var(--brand); color: white; border-color: transparent; }
+    .page-btn:hover:not(.active) { background: var(--brand-soft); }
+    /* ── Annotation banner ── */
+    .mockup-note {
+      background: #fefce8; border: 1px solid #fde68a; border-radius: var(--radius);
+      padding: 10px 16px; font-size: 0.82rem; color: #92400e; margin-bottom: 24px;
+      display: flex; align-items: center; gap: 8px;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="logo">
+      <h2>dichvideo.com</h2>
+      <span>Giao diện dịch video</span>
+    </div>
+    <nav>
+      <button class="menu" onclick="showTab('home')">Trang chủ</button>
+      <button class="menu" onclick="showTab('history')" id="menu-history">Lịch sử</button>
+      <button class="menu" onclick="showTab('editor')">Trình chỉnh sửa</button>
+      <button class="menu" onclick="showTab('srt')">SRT sang Audio</button>
+      <button class="menu active" onclick="showTab('settings')" id="menu-settings">Cài đặt</button>
+    </nav>
+    <div class="sidebar-footer">Phiên bản 1.0 • Thiết kế mới</div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main>
+    <!-- ════════════════════════════════════
+         TAB: CÀI ĐẶT
+    ════════════════════════════════════ -->
+    <div class="tab-content active" id="tab-settings">
+
+      <div class="mockup-note">
+        📝 <strong>MOCKUP</strong> — Tab Cài đặt. Dữ liệu lưu vào
+        <code>~/.tauri-translate-app/settings.json</code> qua Tauri command.
+      </div>
+
+      <header class="page-header">
+        <div class="page-title">
+          <p class="eyebrow">Cài đặt</p>
+          <h1>Thiết lập ứng dụng</h1>
+        </div>
+      </header>
+
+      <!-- ── Section 1: Nhà cung cấp AI ── -->
+      <div class="card">
+        <div class="card-title">🤖 Nhà cung cấp AI</div>
+        <div class="card-desc">
+          Chọn dịch vụ AI bạn muốn sử dụng để dịch phụ đề.
+          Mỗi nhà cung cấp yêu cầu API key riêng.
+        </div>
+
+        <div class="field">
+          <label>Nhà cung cấp</label>
+          <div class="provider-group">
+            <button class="provider-btn selected" onclick="selectProvider(this,'openai')">
+              <span class="provider-icon">✦</span> OpenAI
+            </button>
+            <button class="provider-btn" onclick="selectProvider(this,'gemini')">
+              <span class="provider-icon">◈</span> Google Gemini
+            </button>
+            <button class="provider-btn" onclick="selectProvider(this,'deepseek')">
+              <span class="provider-icon">⬡</span> DeepSeek
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Model <span class="model-tag" id="model-hint">gpt-4o-mini</span></label>
+          <select id="model-select">
+            <optgroup label="GPT-4o" data-provider="openai">
+              <option value="gpt-4o-mini">gpt-4o-mini (Nhanh, tiết kiệm)</option>
+              <option value="gpt-4o">gpt-4o (Chất lượng cao)</option>
+            </optgroup>
+            <optgroup label="GPT-3.5" data-provider="openai">
+              <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+            </optgroup>
+          </select>
+          <span class="hint">Chọn model phù hợp với nhu cầu và ngân sách của bạn.</span>
+        </div>
+
+        <div class="field">
+          <label>API Key</label>
+          <div class="input-wrap">
+            <input type="password" id="api-key-input"
+              placeholder="sk-proj-••••••••••••••••••••••••••••••" value="sk-proj-demo1234" />
+            <button class="toggle-vis" onclick="toggleVis()">Hiện</button>
+          </div>
+          <span class="hint">Key được lưu cục bộ trên máy, không gửi đến server của chúng tôi.</span>
+        </div>
+      </div>
+
+      <!-- ── Section 2: Tùy chọn dịch ── -->
+      <div class="card">
+        <div class="card-title">🌐 Tùy chọn dịch thuật</div>
+        <div class="card-desc">Cấu hình ngôn ngữ và thông số dịch mặc định.</div>
+
+        <div class="settings-grid">
+          <div class="field">
+            <label>Ngôn ngữ đích mặc định</label>
+            <select>
+              <option value="Vietnamese" selected>🇻🇳 Tiếng Việt</option>
+              <option value="English">🇺🇸 English</option>
+              <option value="Chinese">🇨🇳 中文</option>
+              <option value="Japanese">🇯🇵 日本語</option>
+              <option value="Korean">🇰🇷 한국어</option>
+              <option value="French">🇫🇷 Français</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Số đoạn / chunk
+              <span class="model-tag">chunk_size</span>
+            </label>
+            <input type="number" value="30" min="5" max="200" />
+            <span class="hint">Số đoạn phụ đề gửi mỗi lần gọi API. Nhỏ hơn = ổn định hơn, lớn hơn = nhanh hơn.</span>
+          </div>
+        </div>
+      </div>
+      <!-- ── Save row ── -->
+      <div class="save-row">
+        <button class="btn-primary" onclick="simulateSave()">💾 Lưu cài đặt</button>
+        <span class="save-status ok" id="save-status" style="display:none">
+          ✓ Đã lưu vào settings.json
+        </span>
+      </div>
+
+    </div><!-- /tab-settings -->
+    <!-- ════════════════════════════════════
+         TAB: LỊCH SỬ
+    ════════════════════════════════════ -->
+    <div class="tab-content" id="tab-history">
+
+      <div class="mockup-note">
+        📝 <strong>MOCKUP</strong> — Tab Lịch sử. Danh sách project IDs lấy từ
+        <code>app_data.json</code> → đọc từng file
+        <code>~/.tauri-translate-app/projects/{id}.json</code>.
+        Thumbnail lấy từ <code>media.thumbnail_path</code> → convert sang <code>asset://</code> URL qua <code>convertFileSrc()</code>.
+        Ảnh dưới dùng placeholder để simulate; trong app thật sẽ là ảnh thực từ file <code>projects/{id}/media/thumbnail.jpg</code>.
+      </div>
+
+      <header class="page-header">
+        <div class="page-title">
+          <p class="eyebrow">Lịch sử</p>
+          <h1>Danh sách phiên đã xử lý</h1>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="badge-count">4 projects</span>
+          <button class="action-btn" style="margin:0">🗑 Xóa tất cả</button>
+        </div>
+      </header>
+
+      <!-- Toolbar: tìm kiếm + lọc -->
+      <div class="history-toolbar">
+        <input class="search-input" type="text"
+          placeholder="🔍 Tìm theo tên file hoặc ID..." />
+        <select class="filter-select">
+          <option value="">Tất cả trạng thái</option>
+          <option value="completed">✅ Hoàn thành</option>
+          <option value="failed">❌ Thất bại</option>
+          <option value="running">⏳ Đang chạy</option>
+        </select>
+        <select class="filter-select">
+          <option>Mới nhất trước</option>
+          <option>Cũ nhất trước</option>
+          <option>Tên A→Z</option>
+        </select>
+      </div>
+
+      <!-- Project table -->
+      <div class="card" style="padding:0; overflow:hidden;">
+        <table class="project-table">
+          <thead>
+            <tr>
+              <th style="width:108px; padding-left:16px;">Thumb</th>
+              <th>Tên file / ID</th>
+              <th>Thông tin media</th>
+              <th>Trạng thái</th>
+              <th>Cập nhật</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Row 1: completed — thumbnail có ảnh -->
+            <tr>
+              <td>
+                <div class="thumb">
+                  <div class="thumb-loading" id="sk1"></div>
+                  <img src="https://picsum.photos/seed/vid1/192/108"
+                       alt="thumbnail"
+                       onload="document.getElementById('sk1').style.display='none'"
+                       onerror="this.style.display='none';document.getElementById('sk1').style.display='none';document.getElementById('fb1').style.display='flex'" />
+                  <div class="thumb-fallback" id="fb1" style="display:none">🎬</div>
+                  <span class="thumb-duration">0:13</span>
+                </div>
+              </td>
+              <td>
+                <div class="project-name">dd6e9790-0009-4514.mp4</div>
+                <div class="project-id">64e77839-3fe3-419b-a7dd-228d520ba83d</div>
+              </td>
+              <td>
+                <div>2160×3840 · 60fps</div>
+                <div class="media-info">⏱ 13.1s · hevc · 6.0 MB</div>
+              </td>
+              <td><span class="status-pill status-completed"><span class="dot"></span>Hoàn thành</span></td>
+              <td><span style="font-size:0.85rem;color:var(--muted)">23/06/2026<br/>13:56</span></td>
+              <td>
+                <button class="action-btn">📂 Mở</button>
+                <button class="action-btn" style="color:var(--danger);">🗑</button>
+              </td>
+            </tr>
+            <!-- Row 2: completed — thumbnail có ảnh -->
+            <tr>
+              <td>
+                <div class="thumb">
+                  <div class="thumb-loading" id="sk2"></div>
+                  <img src="https://picsum.photos/seed/vid2/192/108"
+                       alt="thumbnail"
+                       onload="document.getElementById('sk2').style.display='none'"
+                       onerror="this.style.display='none';document.getElementById('sk2').style.display='none';document.getElementById('fb2').style.display='flex'" />
+                  <div class="thumb-fallback" id="fb2" style="display:none">🎬</div>
+                  <span class="thumb-duration">5:23</span>
+                </div>
+              </td>
+              <td>
+                <div class="project-name">interview_final_cut.mp4</div>
+                <div class="project-id">a1b2c3d4-e5f6-7890-abcd-ef1234567890</div>
+              </td>
+              <td>
+                <div>1920×1080 · 30fps</div>
+                <div class="media-info">⏱ 5m 23s · h264 · 142 MB</div>
+              </td>
+              <td><span class="status-pill status-completed"><span class="dot"></span>Hoàn thành</span></td>
+              <td><span style="font-size:0.85rem;color:var(--muted)">22/06/2026<br/>09:14</span></td>
+              <td>
+                <button class="action-btn">📂 Mở</button>
+                <button class="action-btn" style="color:var(--danger);">🗑</button>
+              </td>
+            </tr>
+            <!-- Row 3: failed — thumbnail lỗi → hiện fallback icon -->
+            <tr>
+              <td>
+                <div class="thumb" style="background:#fee2e2;">
+                  <img src="https://this-url-does-not-exist.invalid/thumb.jpg"
+                       alt="thumbnail"
+                       style="display:none"
+                       onerror="document.getElementById('fb3').style.display='flex'" />
+                  <div class="thumb-fallback" id="fb3" style="display:flex;color:#dc2626;">🎬</div>
+                </div>
+              </td>
+              <td>
+                <div class="project-name">lecture_recording.mkv</div>
+                <div class="project-id">f9e8d7c6-b5a4-3210-fedc-ba9876543210</div>
+              </td>
+              <td>
+                <div>1280×720 · 25fps</div>
+                <div class="media-info">⏱ 1h 12m · vp9 · 890 MB</div>
+              </td>
+              <td>
+                <span class="status-pill status-failed"><span class="dot"></span>Thất bại</span>
+                <div style="font-size:0.75rem;color:var(--danger);margin-top:4px;">
+                  Lỗi: API timeout ở chunk 3/14
+                </div>
+              </td>
+              <td><span style="font-size:0.85rem;color:var(--muted)">21/06/2026<br/>18:02</span></td>
+              <td>
+                <button class="action-btn" style="color:var(--warning);">🔄 Thử lại</button>
+                <button class="action-btn" style="color:var(--danger);">🗑</button>
+              </td>
+            </tr>
+            <!-- Row 4: running — thumbnail có ảnh, shimmer đang hiện -->
+            <tr>
+              <td>
+                <div class="thumb">
+                  <div class="thumb-loading" id="sk4"></div>
+                  <img src="https://picsum.photos/seed/vid4/192/108"
+                       alt="thumbnail"
+                       onload="document.getElementById('sk4').style.display='none'"
+                       onerror="this.style.display='none';document.getElementById('sk4').style.display='none';document.getElementById('fb4').style.display='flex'" />
+                  <div class="thumb-fallback" id="fb4" style="display:none">🎬</div>
+                  <span class="thumb-duration">3:45</span>
+                </div>
+              </td>
+              <td>
+                <div class="project-name">product_demo_v2.mp4</div>
+                <div class="project-id">11223344-5566-7788-9900-aabbccddeeff</div>
+              </td>
+              <td>
+                <div>1920×1080 · 60fps</div>
+                <div class="media-info">⏱ 3m 45s · hevc · 78 MB</div>
+              </td>
+              <td><span class="status-pill status-running"><span class="dot"></span>Đang dịch (chunk 4/6)</span></td>
+              <td><span style="font-size:0.85rem;color:var(--muted)">03/07/2026<br/>10:01</span></td>
+              <td>
+                <button class="action-btn" style="color:var(--danger);">⏹ Dừng</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination">
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">›</button>
+      </div>
+
+    </div><!-- /tab-history -->
+
+  </main>
+</div><!-- /app -->
+
+<script>
+  /* ── Tab switching ── */
+  function showTab(name) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.menu').forEach(el => el.classList.remove('active'));
+    const tab = document.getElementById('tab-' + name);
+    const menu = document.getElementById('menu-' + name);
+    if (tab) tab.classList.add('active');
+    if (menu) menu.classList.add('active');
+  }
+
+  /* ── Provider selection ── */
+  const modelsByProvider = {
+    openai:   ['gpt-4o-mini','gpt-4o','gpt-3.5-turbo'],
+    gemini:   ['gemini-1.5-flash','gemini-1.5-pro','gemini-2.0-flash'],
+    deepseek: ['deepseek-chat','deepseek-reasoner']
+  };
+
+  function selectProvider(btn, provider) {
+    document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+
+    const sel = document.getElementById('model-select');
+    sel.innerHTML = '';
+    modelsByProvider[provider].forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m; opt.textContent = m;
+      sel.appendChild(opt);
+    });
+    document.getElementById('model-hint').textContent = modelsByProvider[provider][0];
+  }
+
+  document.getElementById('model-select').addEventListener('change', function() {
+    document.getElementById('model-hint').textContent = this.value;
+  });
+
+  /* ── Toggle API key visibility ── */
+  function toggleVis() {
+    const inp = document.getElementById('api-key-input');
+    const btn = document.querySelector('.toggle-vis');
+    if (inp.type === 'password') { inp.type = 'text'; btn.textContent = 'Ẩn'; }
+    else                         { inp.type = 'password'; btn.textContent = 'Hiện'; }
+  }
+
+  /* ── Simulate save ── */
+  function simulateSave() {
+    const st = document.getElementById('save-status');
+    st.style.display = 'inline';
+    st.className = 'save-status ok';
+    st.textContent = '✓ Đã lưu vào settings.json';
+    setTimeout(() => { st.style.display = 'none'; }, 3000);
+  }
+</script>
+</body>
+</html>

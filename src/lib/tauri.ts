@@ -1,4 +1,4 @@
-import type { QueueJobRequest } from "./types";
+import type { QueueJobRequest, AppSettings, ProjectRecord } from "./types";
 
 export async function invokeCommand<T = unknown>(cmd: string, args?: Record<string, unknown>) {
   if (typeof window === "undefined" || !(window as any).__TAURI__) {
@@ -59,4 +59,22 @@ export async function chooseVideoFiles(): Promise<string[]> {
 
 export function isTauriAvailable(): boolean {
   return typeof window !== "undefined" && !!(window as any).__TAURI__;
+}
+
+/** Load settings from ~/.tauri-translate-app/settings.json */
+export async function loadSettings(): Promise<AppSettings> {
+  return invokeCommand<AppSettings>("load_settings");
+}
+
+/** Persist settings to ~/.tauri-translate-app/settings.json */
+export async function saveSettings(settings: AppSettings): Promise<void> {
+  return invokeCommand<void>("save_settings", { settings });
+}
+
+/**
+ * Load project history: reads app_data.json for IDs then loads each
+ * project file from ~/.tauri-translate-app/projects/{id}.json
+ */
+export async function loadHistory(): Promise<ProjectRecord[]> {
+  return invokeCommand<ProjectRecord[]>("load_history");
 }

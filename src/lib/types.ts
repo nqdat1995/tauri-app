@@ -64,3 +64,12 @@ export type QueueJobRequest = {
   width: number | null;
   height: number | null;
 };
+
+/** Mirrors AppSettings struct in src-tauri/src/translation/models.rs */
+export type AppSettings = {
+  provider: "openai" | "gemini" | "deepseek";
+  api_key: string;
+  model: string;
+  target_language: string;
+  chunk_size: number;
+};

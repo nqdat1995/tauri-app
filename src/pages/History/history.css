@@ -1,0 +1,268 @@
+.history-page {
+  /* no max-width — use full available space */
+}
+
+/* ── Loading / error states ── */
+.history-loading,
+.history-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 0;
+  color: var(--muted);
+}
+
+.history-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: history-spin 0.7s linear infinite;
+}
+
+@keyframes history-spin {
+  to { transform: rotate(360deg); }
+}
+
+.history-error {
+  color: #dc2626;
+}
+
+/* ── Header ── */
+.history-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.badge-count {
+  background: var(--brand);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* ── Toolbar ── */
+.history-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.history-search {
+  flex: 1;
+  min-width: 200px;
+  padding: 11px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font: inherit;
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: var(--surface);
+}
+
+.history-search:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+.history-filter {
+  padding: 11px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font: inherit;
+  font-size: 0.92rem;
+  outline: none;
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.history-filter:focus {
+  border-color: var(--brand);
+}
+
+/* ── Card wrapper ── */
+.history-card {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+
+.history-table-wrap {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* ── Empty state ── */
+.history-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+
+.history-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.history-empty p {
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+
+.history-empty-hint {
+  font-size: 0.88rem;
+}
+
+/* ── Table ── */
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  font-weight: 700;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.55);
+  font-size: 0.92rem;
+  vertical-align: middle;
+}
+
+.history-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.history-table tbody tr:hover td {
+  background: rgba(91, 68, 255, 0.025);
+}
+
+.col-thumb {
+  width: 116px;
+}
+
+/* ── Thumbnail ── */
+.project-thumb {
+  width: 96px;
+  height: 54px;
+  border-radius: 8px;
+  background: #eef2ff;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.project-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumb-fallback {
+  font-size: 20px;
+  color: var(--muted);
+}
+
+/* Shimmer while loading */
+.thumb-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #e0e7ff 25%, #c7d2fe 50%, #e0e7ff 75%);
+  background-size: 200% 100%;
+  animation: thumb-shimmer 1.4s infinite;
+}
+
+@keyframes thumb-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Duration badge */
+.thumb-duration {
+  position: absolute;
+  bottom: 3px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+/* ── Project name / ID ── */
+.project-name {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.project-id {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-family: "Consolas", "Courier New", monospace;
+}
+
+/* ── Media info ── */
+.media-info {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+/* ── Status pill ── */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.status-completed { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+.status-failed    { background: rgba(239, 68, 68, 0.12);  color: #dc2626; }
+.status-running   { background: rgba(91, 68, 255, 0.12);  color: #5b44ff; }
+.status-queued    { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+
+/* ── Date cell ── */
+.date-cell {
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+}

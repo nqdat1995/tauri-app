@@ -49,8 +49,21 @@
 - Deleted: orchestrator.rs, commands.rs (replaced by modules above)
 - Build Status: cargo check PASSED (0 errors)
 
+## Settings & History Tabs — Completed 2026-07-03
+### New Files
+- src/pages/Settings/settings.css
+- src/pages/History/history.css
+### Modified Files
+- src-tauri/src/commands/project.rs — added load_settings, save_settings, load_history commands
+- src-tauri/src/commands/mod.rs — re-exported 3 new commands
+- src-tauri/src/lib.rs — registered 3 new Tauri commands
+- src/lib/types.ts — added AppSettings type
+- src/lib/tauri.ts — added loadSettings(), saveSettings(), loadHistory()
+- src/pages/Settings/index.tsx — full Settings UI (provider select, model, API key, chunk_size)
+- src/pages/History/index.tsx — full History UI (table with real thumbnail via convertFileSrc)
+### Build Status: cargo check PASSED · tsc PASSED
+
 ## Current Status
 - **Lifecycle Phase**: COMPLETE
 - **Build Status**: cargo check PASSED
-- **All FRs**: Implemented (FR-01 through FR-12)
-- **Refactor**: COMPLETE — src-tauri/src restructured by responsibility
+- **All FRs**: Implemented (FR-01 through FR-12 + Settings + History tabs)

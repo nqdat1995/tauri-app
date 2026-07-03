@@ -183,3 +183,47 @@ Answers summary:
 **Context**: CONSTRUCTION - Code Generation complete for refactor task
 
 ---
+
+## New Request — Settings & History Tabs + Mockup
+**Timestamp**: 2026-07-03T10:00:00Z
+**User Input**: "Sử dụng AI-DLC tiến hành thực hiện các tính năng bên dưới: Xây dựng tab Cài đặt (chọn AI, nhập API Key, lưu settings.json), Xây dựng tab Lịch sử (hiển thị projects từ app_data.json), Tạo mockup HTML/CSS để review trước khi thực hiện."
+**AI Response**: Bắt đầu AI-DLC workflow cho request mới. Brownfield project. Phân tích: AppSettings (provider, api_key, model, target_language, chunk_size) trong translation/models.rs; AppData.projects (Vec<String> project IDs) trong state.rs; storage.rs có read_settings()/settings_file_path(). Frontend: React + TypeScript + Tauri v2. Yêu cầu tạo mockup HTML trước để review.
+**Context**: INCEPTION - Workspace Detection. Tiến hành tạo mockup HTML/CSS cho 2 tabs.
+
+---
+
+## Mockup Created — Settings & History
+**Timestamp**: 2026-07-03T10:15:00Z
+**AI Response**: Tạo mockup HTML/CSS tại aidlc-docs/mockup/mockup-settings-history.html. Mockup bao gồm:
+- Tab Cài đặt: chọn provider (OpenAI/Gemini/DeepSeek), chọn model, nhập API key, ngôn ngữ đích, chunk_size. Preview settings.json.
+- Tab Lịch sử: toolbar search+filter, bảng 4 cột (thumb, tên/ID, media info, status, thời gian, hành động), pagination.
+Đang chờ user review và approve trước khi implement code thật.
+**Context**: INCEPTION - Requirements Analysis / Mockup stage. Awaiting user approval.
+
+---
+
+## Mockup Approved — Proceeding to Code Generation
+**Timestamp**: 2026-07-03T10:30:00Z
+**User Input**: "Approve & Continue"
+**AI Response**: User approved mockup. Proceeding to Code Generation — Part 1 Planning.
+**Context**: CONSTRUCTION - Code Generation Part 1 (Planning) for Settings & History tabs.
+
+---
+
+## Code Generation — Settings & History — Complete
+**Timestamp**: 2026-07-03T10:45:00Z
+**AI Response**: Tất cả 8 steps hoàn thành. cargo check PASSED. tsc --noEmit PASSED (0 errors).
+Files tạo mới:
+  - src/pages/Settings/settings.css
+  - src/pages/History/history.css
+Files chỉnh sửa:
+  - src-tauri/src/commands/project.rs (thêm load_settings, save_settings, load_history)
+  - src-tauri/src/commands/mod.rs (re-export 3 commands mới)
+  - src-tauri/src/lib.rs (register 3 commands mới vào invoke_handler)
+  - src/lib/types.ts (thêm AppSettings type)
+  - src/lib/tauri.ts (thêm loadSettings, saveSettings, loadHistory functions)
+  - src/pages/Settings/index.tsx (implement đầy đủ Settings page)
+  - src/pages/History/index.tsx (implement đầy đủ History page)
+**Context**: CONSTRUCTION - Code Generation complete.
+
+---
