@@ -1,124 +1,242 @@
-# Requirements Document
+# Requirements — Video Editor Feature (Trình chỉnh sửa video)
 
-## Intent Analysis Summary
+## Intent Analysis
 
-- **User Request**: Hoàn thiện các tính năng trong thư mục `src-tauri/src/translation`
-- **Request Type**: Enhancement / Feature Completion (Brownfield)
-- **Scope Estimate**: Multiple Components — toàn bộ translation module (service, providers, chunk_builder, provider_factory, models, lib.rs, Cargo.toml)
-- **Complexity Estimate**: Moderate — kiến trúc đã có sẵn, cần implement đầy đủ logic cho từng component
+| Field | Value |
+|---|---|
+| **User Request** | Xây dựng hoàn thiện tính năng chỉnh sửa video (tab "Trình chỉnh sửa") dựa trên mockup |
+| **Request Type** | New Feature (full-stack: Frontend + Backend) |
+| **Scope Estimate** | Multiple Components (new FE page + new Rust commands + data model extension) |
+| **Complexity Estimate** | Moderate-to-Complex |
+| **Phased Delivery** | Phase 1 (current): Edit + Save. Phase 2 (future): Export video + TTS |
 
 ---
 
-## Context từ Reverse Engineering
+## Phased Approach
 
-Translation module hiện tại có kiến trúc đúng hướng (Strategy + Factory pattern) nhưng tất cả implementations đều là skeleton hoặc trống. Module cũng chưa được khai báo trong `lib.rs` và thiếu 3 Cargo dependencies.
+### Phase 1 (Current Scope)
+- Subtitle editing (CRUD: read, edit text/timing, add new, delete)
+- Subtitle style configuration (font, size, color, background, position, opacity)
+- Real video playback with live subtitle overlay (matching selected style)
+- Persist all changes to project storage (manual save)
+- Overlay tab UI with full settings (saved for Phase 2 rendering)
+- Navigate to editor from History or auto-open after STT
+
+### Phase 2 (Future — NOT in current scope)
+- Video export with burn-in subtitles (FFmpeg)
+- TTS audio generation via sidecar
+- Final video rendering with all overlays applied
 
 ---
 
 ## Functional Requirements
 
-### FR-01: Module Registration
-Translation module phải được khai báo trong `lib.rs` và có `translation/mod.rs` để re-export submodules. Cargo.toml phải có đủ dependencies: `reqwest` (async HTTP), `async-trait`, `anyhow`.
+### FR-ED-01: Load Project into Editor
+- Editor loads the most recently processed project on tab open
+- User can also open a specific project from History tab
+- Load `project.json` + `subtitles.json` from `projects/{id}/` storage
+- Display project metadata: filename, duration, file size, resolution, processing time
 
-### FR-02: Global Config
-App phải đọc/ghi settings từ file `~/.tauri-translate-app/settings.json`. Settings bao gồm:
-- `provider`: loại provider (`"openai"`, `"gemini"`, `"deepseek"`)
-- `api_key`: API key của provider đang dùng
-- `model`: tên model (ví dụ `"gpt-4o-mini"`, `"gemini-1.5-flash"`, `"deepseek-chat"`)
-- `target_language`: ngôn ngữ đích mặc định
-- `chunk_size`: số segments tối đa mỗi chunk (default: 30)
+### FR-ED-02: Video Playback
+- Play video from local filesystem using HTML5 `<video>` + Tauri `asset://` protocol
+- Playback controls: play/pause, skip forward/backward, seek via timeline
+- Display current time / total duration
+- Volume control, mute toggle
+- Fullscreen toggle
 
-### FR-03: TranslationService — Pipeline Orchestration
-`TranslationService::translate_project(project_id)` phải thực hiện đầy đủ pipeline:
-1. Đọc `subtitles.json` từ project directory
-2. Đọc settings từ global config (FR-02)
-3. Tạo provider instance qua `provider_factory`
-4. Chia segments thành chunks theo `chunk_size` từ config
-5. Với mỗi chunk: gọi `provider.translate()`, thu thập kết quả và lỗi riêng
-6. Merge tất cả translated segments lại theo thứ tự
-7. Ghi đè `subtitles.json` với `translated_content` đã được điền vào từng cue
-8. Cập nhật `project.json`: set `processing.translation_status = "completed"` (hoặc `"partial"` nếu có chunk lỗi)
+### FR-ED-03: Subtitle Overlay on Video
+- Render subtitle text on top of video viewport in real-time
+- Subtitle appears/disappears based on cue timing (startTime → endTime)
+- Overlay style matches the user-selected SubtitleStyle (font, size, color, bg, position, opacity)
+- Live preview: changing style immediately updates the overlay appearance
 
-### FR-04: Error Handling — Partial Translation
-Khi một hoặc nhiều chunks bị lỗi (timeout, API error, parse failure):
-- KHÔNG fail toàn bộ job
-- Tiếp tục dịch các chunks còn lại
-- Segments của chunk lỗi giữ `translated_content = null`
-- Khi hoàn thành, nếu có chunk lỗi: `translation_status = "partial"`, lưu danh sách lỗi
-- Nếu tất cả chunks thành công: `translation_status = "completed"`
+### FR-ED-04: Subtitle Table (Read/Edit)
+- Display all subtitle cues in a table: TIME | VĂN BẢN GỐC | VĂN BẢN DỊCH
+- Allow inline editing of original text and translated text
+- Allow editing of start/end timing per cue
+- Highlight the currently active cue (based on video playback time)
+- Click on a row to seek video to that cue's startTime
 
-### FR-05: ChunkBuilder
-`ChunkBuilder` phải:
-- Có constructor `ChunkBuilder::new(max_segments: usize)`
-- Method `split()` chia `&[TranslationSegment]` thành `Vec<Vec<TranslationSegment>>`
-- Đọc `max_segments` từ settings khi khởi tạo (được inject từ service)
-- Import đúng `TranslationSegment` từ `crate::translation::models`
+### FR-ED-05: Add New Subtitle
+- User can add a new subtitle cue (with empty text fields)
+- New cue gets default timing (e.g., current video time → +3s)
+- New cue appears in table and is immediately editable
 
-### FR-06: ProviderFactory
-`create_provider()` phải:
-- Nhận `provider_type: ProviderType`, `api_key: String`, `model: String` làm params
-- Handle tất cả 3 variants: `OpenAI`, `Gemini`, `DeepSeek`
-- Return `Box<dyn Translator>`
+### FR-ED-06: Delete Subtitle
+- User can delete any subtitle cue from the table
+- Confirmation not required (immediate delete, recoverable via not saving)
 
-### FR-07: OpenAI Provider
-`OpenAIProvider` phải implement đầy đủ:
-- `new(api_key: String, model: String) -> Self`
-- `build_prompt(request: &TranslationRequest) -> String`: tạo JSON array của segments gửi lên AI
-- `call_api(prompt: String) -> anyhow::Result<String>`: gọi `https://api.openai.com/v1/chat/completions` với `reqwest`, bearer auth
-- `parse_response(response: String) -> anyhow::Result<TranslationResult>`: parse JSON array trả về từ AI
-- `validate(result: &TranslationResult) -> anyhow::Result<()>`: kiểm tra segment count khớp với request
+### FR-ED-07: Manual Save
+- Changes are NOT auto-saved
+- User clicks "Lưu" (Save) button to persist
+- Save writes updated `subtitles.json` + updated `project.json` (with style) to disk
+- Backend Tauri command: `save_editor_project(project_id, subtitles, style)`
 
-### FR-08: Gemini Provider
-`GeminiProvider` phải implement đầy đủ tương tự OpenAI:
-- `new(api_key: String, model: String) -> Self`
-- Gọi Gemini API: `https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent`
-- Cùng structured JSON prompt/response format
-- Implement `Translator` trait
+### FR-ED-08: Subtitle Style Configuration
+- Right panel "Style" tab with preset grid
+- Presets show preview text with different styles
+- User can select a preset → applies immediately to video overlay
+- Manual fine-tuning:
+  - Font family (system fonts dropdown)
+  - Font size (slider, px value)
+  - Text color (color picker)
+  - Background color (color picker)
+  - Background shape: Hộp bo (rounded) / Hộp vuông (box) / Không (none)
+  - Position: Trên (top) / Dưới (bottom)
+  - Background opacity (slider, 0-100%)
+- Active style saved in `project.json` under `editor_style` field
 
-### FR-09: DeepSeek Provider
-`DeepSeekProvider` phải implement đầy đủ:
-- `new(api_key: String, model: String) -> Self`
-- Gọi `https://api.deepseek.com/chat/completions` (OpenAI-compatible format)
-- Có thể tái dùng logic từ OpenAI provider (chỉ khác base URL)
-- Implement `Translator` trait
+### FR-ED-09: Overlay Tab (UI + Persistence)
+- "Overlay" tab in right panel
 
-### FR-10: Translation Prompt Format
-Prompt gửi lên AI provider phải theo structured JSON format:
-- **System message**: Hướng dẫn AI dịch phụ đề, giữ nguyên timing, trả về JSON array
-- **User message**: JSON array `[{"id": N, "text": "..."}]`
-- **Expected response**: JSON array `[{"id": N, "text": "...translated..."}]`
-- Validate response: số phần tử trả về phải bằng số phần tử gửi đi, `id` phải khớp
+**Available effect types (displayed as buttons at the top):**
+- Nền phủ (Background overlay)
+- Kính mờ (Blur)
+- Hiệu ứng gương (Mirror effect)
+- Chữ (Text overlay)
+- Logo
+- Watermark
 
-### FR-11: Tauri Command — translate_project
-Thêm Tauri command `translate_project(project_id: String)` để frontend có thể gọi. Command này gọi `TranslationService::translate_project()` và trả `Result<(), String>`.
+**Interaction model:**
+1. Effect types are shown as **buttons** in a toolbar area
+2. Clicking a button **adds an instance** of that effect to the **active effects list** below
+3. Each effect type allows a maximum of **X instances** (configurable in code, default X = 5)
+4. When the limit is reached, the button becomes disabled
 
-### FR-12: SubtitleCue — translated_content
-`subtitles.json` lưu array `SubtitleCue`. Mỗi cue có field `translated_content: Option<String>`. Sau khi dịch, field này được điền. File được ghi đè lên disk.
+**Active effects list:**
+- Each added effect shows as a list item with: effect name + **eye icon** (toggle visibility/enable-disable)
+- Clicking on a list item **opens the configuration panel** specific to that effect type:
+  - Nền phủ: color picker + opacity slider
+  - Kính mờ: color picker + opacity slider
+  - Hiệu ứng gương: (no extra config — toggle only via eye icon)
+  - Chữ: text input + font family + font size + color
+  - Logo: file picker + opacity
+  - Watermark: file picker + opacity
+- Each list item can be **deleted** (remove from list)
+
+**Size/Position — Visual editing on viewport:**
+- Size and position are NOT configured in the settings panel
+- Instead, user **drags** the overlay element directly on the video viewport to set position
+- Overlay elements are **resizable** via drag handles on the viewport
+- This provides intuitive WYSIWYG-style editing
+
+**Persistence:**
+- Overlay settings (list of active effects with their config, position, size, enabled state) saved to `project.json` under `editor_overlays` field
+- Overlay rendering on video viewport is Phase 2 (in Phase 1: only persist settings + show placeholder/bounding boxes on viewport for positioning)
+
+### FR-ED-10: Editor Toolbar
+- Status badge showing project state (Đã có phụ đề/giọng, Đang xử lý, etc.)
+- Project filename and metadata display
+- "Tạo lại âm thanh" button (disabled/placeholder in Phase 1)
+- "Xuất Video" button (disabled/placeholder in Phase 1, shows tooltip "Sẽ có trong phiên bản tiếp")
+- "Lưu" (Save) button — triggers FR-ED-07
+
+### FR-ED-11: Navigate from History to Editor
+- History table rows have an "Edit" action/button
+- Clicking "Edit" switches to Editor tab and loads that project
+- After STT completes on Home tab, option to auto-navigate to Editor
 
 ---
 
 ## Non-Functional Requirements
 
-### NFR-01: Async / Non-blocking
-Toàn bộ translation pipeline phải async (`async fn`). Không block Tauri main thread. Sử dụng `reqwest` với async feature, `tokio` runtime (có sẵn qua Tauri).
+### NFR-ED-01: Performance
+- Video playback must be smooth (no frame drops from subtitle overlay)
+- Subtitle table supports up to 500+ cues without noticeable lag
+- Save operation completes in < 1 second for typical projects
 
-### NFR-02: Resilience
-Mỗi chunk được xử lý độc lập. Lỗi ở chunk N không ảnh hưởng chunks khác. Lỗi được ghi lại và aggregated, không bị silently dropped.
+### NFR-ED-02: Data Integrity
+- Save is atomic: either all changes persist or none (no partial writes)
+- Unsaved changes indicator (e.g., dot on tab or "Unsaved" badge)
 
-### NFR-03: Correctness của Translation Output
-Segment count sau khi dịch phải bằng segment count đầu vào. Thứ tự segments phải được bảo toàn. ID mapping phải chính xác.
-
-### NFR-04: Code Consistency
-Translation module sử dụng `anyhow::Result` cho error type (consistent với `providers/mod.rs` hiện tại). Storage layer giữ `Result<T, String>`. Có conversion tại boundary.
-
-### NFR-05: Compilable
-Sau khi hoàn thiện, toàn bộ codebase phải compile thành công (`cargo build`). Không còn unresolved imports hay missing implementations.
+### NFR-ED-03: UX
+- Responsive layout that adapts to window resize
+- Keyboard shortcuts: Space = play/pause, Ctrl+S = save
+- Visual feedback on save (success toast/indicator)
 
 ---
 
-## Out of Scope
-- Frontend UI changes (không thuộc `src-tauri/src/translation/`)
-- Rate limiting / request throttling (có thể add sau)
-- Caching translation results
-- Translation memory / glossary support
-- Progress events đến frontend (không cần theo Q6)
+## Data Model Changes
+
+### project.json Extension
+```json
+{
+  "schema_version": 2,
+  "...existing fields...": "...",
+  "editor_style": {
+    "id": "preset-id",
+    "fontFamily": "system-ui",
+    "fontSize": 22,
+    "textColor": "#fbbf24",
+    "bgColor": "#dc2626",
+    "bgShape": "rounded",
+    "position": "bottom",
+    "bgOpacity": 92
+  },
+  "editor_overlays": {
+    "max_instances_per_type": 5,
+    "items": [
+      {
+        "id": "overlay-1",
+        "type": "background_overlay",
+        "enabled": true,
+        "config": { "color": "#000000", "opacity": 50 },
+        "position": { "x": 0, "y": 0 },
+        "size": { "width": 1920, "height": 1080 }
+      },
+      {
+        "id": "overlay-2",
+        "type": "text",
+        "enabled": true,
+        "config": { "text": "Sample", "fontFamily": "system-ui", "fontSize": 18, "color": "#ffffff" },
+        "position": { "x": 100, "y": 50 },
+        "size": { "width": 200, "height": 40 }
+      },
+      {
+        "id": "overlay-3",
+        "type": "logo",
+        "enabled": false,
+        "config": { "path": "/path/to/logo.png", "opacity": 80 },
+        "position": { "x": 10, "y": 10 },
+        "size": { "width": 120, "height": 60 }
+      }
+    ]
+  }
+}
+```
+
+### subtitles.json Extension
+Each cue may be edited:
+```json
+[
+  {
+    "id": "cue-1",
+    "start_time": 2.65,
+    "end_time": 5.98,
+    "original_text": "又谁晚。",
+    "translated_text": "Ai nữa vậy?",
+    "is_new": false
+  }
+]
+```
+- `is_new`: marks user-added cues (not from STT)
+
+---
+
+## Backend Tauri Commands (Phase 1)
+
+| Command | Purpose |
+|---|---|
+| `load_editor_project(project_id)` | Load project.json + subtitles.json for editor |
+| `save_editor_project(project_id, subtitles, style, overlays)` | Atomic save of edited data |
+| `get_recent_project()` | Return most recently processed project ID |
+| `list_editor_projects()` | Return list of projects available for editing |
+
+---
+
+## Out of Scope (Phase 2)
+- FFmpeg video rendering/export
+- TTS audio generation via sidecar
+- Overlay rendering on video viewport (only persist settings)
+- "Tạo lại âm thanh" actual functionality
+- "Xuất Video" actual functionality

@@ -1,53 +1,98 @@
-# Execution Plan
+# Execution Plan — Video Editor Feature
 
 ## Detailed Analysis Summary
 
 ### Transformation Scope
-- **Transformation Type**: Single module completion (Brownfield — translation module)
-- **Primary Changes**: Implement 7 skeleton/empty files trong `src-tauri/src/translation/`, thêm 3 Cargo dependencies, khai báo module trong `lib.rs`, thêm Tauri command
-- **Related Components**: `lib.rs`, `commands.rs`, `Cargo.toml`, `storage.rs` (minor additions)
+- **Transformation Type**: Multi-component feature addition (Frontend + Backend + Data Model)
+- **Primary Changes**: New Editor page UI, new Tauri commands, project.json schema extension
+- **Related Components**: Frontend (Editor page), Backend (commands, storage), Existing project system
 
 ### Change Impact Assessment
-- **User-facing changes**: Yes — thêm Tauri command `translate_project` để frontend gọi được
-- **Structural changes**: No — architecture đã có sẵn, chỉ implement
-- **Data model changes**: Minor — `subtitles.json` sẽ có `translated_content` field populated sau khi dịch; thêm `AppSettings` struct mới
-- **API changes**: Yes — thêm 1 Tauri command mới, thêm `settings.json` global config
-- **NFR impact**: Low — async I/O, error resilience đã trong requirements
+- **User-facing changes**: Yes — New full editor UI with video playback, subtitle editing, style/overlay configuration
+- **Structural changes**: Yes — New Rust command module, new frontend page with multiple sub-components
+- **Data model changes**: Yes — Extend project.json with `editor_style` + `editor_overlays` fields, extend subtitles.json with `is_new` field
+- **API changes**: Yes — 4 new Tauri commands (load_editor_project, save_editor_project, get_recent_project, list_editor_projects)
+- **NFR impact**: Moderate — Video playback performance, 500+ subtitle rows handling
 
 ### Component Relationships
-- **Primary Component**: `src-tauri/src/translation/` (7 files)
-- **Supporting Components**: `lib.rs`, `commands.rs`, `Cargo.toml` (minor changes)
-- **Unchanged Components**: `orchestrator.rs`, `storage.rs` (đọc thêm settings thôi)
+```
+Frontend Editor Page
+├── VideoPlayer (depends on: asset:// protocol, subtitle data)
+├── SubtitleTable (depends on: subtitles.json data)
+├── StylePanel (depends on: project.json editor_style)
+├── OverlayPanel (depends on: project.json editor_overlays)
+└── EditorToolbar (depends on: project metadata)
+
+Backend Commands (new module: commands/editor.rs)
+├── load_editor_project → storage.rs (read project.json + subtitles.json)
+├── save_editor_project → storage.rs (write project.json + subtitles.json)
+├── get_recent_project → storage.rs (read app_data.json)
+└── list_editor_projects → storage.rs (list projects/)
+
+History Page (existing, minor modification)
+└── Add "Edit" button → navigates to Editor tab with project_id
+```
 
 ### Risk Assessment
-- **Risk Level**: Low-Medium
-- **Rollback Complexity**: Easy — translation module độc lập, không ảnh hưởng STT pipeline
-- **Testing Complexity**: Moderate — cần mock API calls để test
+- **Risk Level**: Medium
+- **Rollback Complexity**: Easy (new files, minimal changes to existing)
+- **Testing Complexity**: Moderate (video playback + state management + file I/O)
 
 ---
 
 ## Workflow Visualization
 
-```
-INCEPTION PHASE
-  [x] Workspace Detection      -- COMPLETED
-  [x] Reverse Engineering      -- COMPLETED
-  [x] Requirements Analysis    -- COMPLETED
-  [ ] User Stories             -- SKIP (no user personas, clear technical scope)
-  [x] Workflow Planning        -- IN PROGRESS
-  [ ] Application Design       -- SKIP (component boundaries already defined)
-  [ ] Units Generation         -- EXECUTE (7 interdependent files need ordered impl plan)
+```mermaid
+flowchart TD
+    Start(["User Request:<br/>Video Editor Feature"])
+    
+    subgraph INCEPTION["INCEPTION PHASE"]
+        WD["Workspace Detection<br/>COMPLETED"]
+        RE["Reverse Engineering<br/>COMPLETED (prior)"]
+        RA["Requirements Analysis<br/>COMPLETED"]
+        US["User Stories<br/>SKIP"]
+        WP["Workflow Planning<br/>IN PROGRESS"]
+        AD["Application Design<br/>EXECUTE"]
+        UG["Units Generation<br/>EXECUTE"]
+    end
+    
+    subgraph CONSTRUCTION["CONSTRUCTION PHASE"]
+        FD["Functional Design<br/>SKIP"]
+        NFRA["NFR Requirements<br/>SKIP"]
+        NFRD["NFR Design<br/>SKIP"]
+        ID["Infrastructure Design<br/>SKIP"]
+        CG["Code Generation<br/>EXECUTE (per-unit)"]
+        BT["Build and Test<br/>EXECUTE"]
+    end
+    
+    Start --> WD
+    WD --> RE
+    RE --> RA
+    RA --> WP
+    WP --> AD
+    AD --> UG
+    UG --> CG
+    CG --> BT
+    BT --> End(["Complete"])
 
-CONSTRUCTION PHASE (per-unit loop)
-  [ ] Functional Design        -- SKIP (data models already in models.rs, business logic straightforward)
-  [ ] NFR Requirements         -- SKIP (NFRs already captured in requirements.md, no new infra)
-  [ ] NFR Design               -- SKIP (no new NFR patterns needed)
-  [ ] Infrastructure Design    -- SKIP (no cloud/infra changes, just Cargo deps)
-  [ ] Code Generation          -- EXECUTE (always)
-  [ ] Build and Test           -- EXECUTE (always)
-
-OPERATIONS PHASE
-  [ ] Operations               -- PLACEHOLDER
+    style WD fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
+    style RE fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
+    style RA fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
+    style WP fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
+    style AD fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray: 5 5,color:#000
+    style UG fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray: 5 5,color:#000
+    style CG fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
+    style BT fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
+    style US fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style FD fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style NFRA fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style NFRD fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style ID fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style INCEPTION fill:#BBDEFB,stroke:#1565C0,stroke-width:3px,color:#000
+    style CONSTRUCTION fill:#C8E6C9,stroke:#2E7D32,stroke-width:3px,color:#000
+    style Start fill:#CE93D8,stroke:#6A1B9A,stroke-width:3px,color:#000
+    style End fill:#CE93D8,stroke:#6A1B9A,stroke-width:3px,color:#000
+    linkStyle default stroke:#333,stroke-width:2px
 ```
 
 ---
@@ -55,59 +100,50 @@ OPERATIONS PHASE
 ## Phases to Execute
 
 ### INCEPTION PHASE
-- [x] Workspace Detection — COMPLETED
-- [x] Reverse Engineering — COMPLETED
-- [x] Requirements Analysis — COMPLETED
-- [ ] User Stories — **SKIP**
-  - **Rationale**: Không có user personas mới. Scope hoàn toàn kỹ thuật: hoàn thiện implementation của module đã thiết kế sẵn.
-- [x] Workflow Planning — IN PROGRESS
-- [ ] Application Design — **SKIP**
-  - **Rationale**: Component boundaries đã rõ ràng từ reverse engineering. Không tạo component mới, chỉ implement các methods còn thiếu trong cấu trúc hiện có.
-- [ ] Units Generation — **EXECUTE**
-  - **Rationale**: Có 7 files cần viết theo thứ tự dependency chặt chẽ (models → trait → providers → chunk_builder → factory → service → wiring). Cần plan rõ ràng để tránh circular imports và đảm bảo thứ tự implement đúng.
+- [x] Workspace Detection (COMPLETED — prior lifecycle)
+- [x] Reverse Engineering (COMPLETED — artifacts current)
+- [x] Requirements Analysis (COMPLETED — 11 FRs defined)
+- [x] User Stories — SKIP
+  - **Rationale**: Single user type (video editor user), clear requirements with mockup, no complex personas needed
+- [x] Workflow Planning (IN PROGRESS)
+- [ ] Application Design — EXECUTE
+  - **Rationale**: New components needed (Editor commands module), new service layer for editor operations, component dependencies need clarification between FE and BE
+- [ ] Units Generation — EXECUTE
+  - **Rationale**: Feature spans backend (Rust commands + storage) and frontend (multiple components), benefits from structured decomposition into units
 
 ### CONSTRUCTION PHASE
-- [ ] Functional Design — **SKIP**
-  - **Rationale**: Data models đã có trong `models.rs`. Business logic (chunking, merging, pipeline) đơn giản, không cần separate design document.
-- [ ] NFR Requirements — **SKIP**
-  - **Rationale**: NFRs đã được capture đầy đủ trong `requirements.md` (async, resilience, correctness). Không có performance/security requirements mới cần assess thêm.
-- [ ] NFR Design — **SKIP**
-  - **Rationale**: Không có NFR patterns mới cần thiết kế (caching, circuit breaker, etc. không trong scope).
-- [ ] Infrastructure Design — **SKIP**
-  - **Rationale**: Không thay đổi cloud infrastructure. Chỉ thêm Cargo dependencies là HTTP client (`reqwest`) — không cần infra design doc.
-- [ ] Code Generation — **EXECUTE** (ALWAYS)
-  - **Rationale**: Implement tất cả 7 files + wiring vào lib.rs/commands.rs/Cargo.toml.
-- [ ] Build and Test — **EXECUTE** (ALWAYS)
-  - **Rationale**: Verify compilation, tạo build/test instructions.
+- [ ] Functional Design — SKIP
+  - **Rationale**: Business logic is straightforward CRUD (read/write subtitles + style). No complex algorithms or state machines needed beyond what's in requirements.
+- [ ] NFR Requirements — SKIP
+  - **Rationale**: Performance needs (smooth video playback, 500+ rows) are addressed by standard approaches (virtual scrolling, efficient re-render). No special NFR patterns needed.
+- [ ] NFR Design — SKIP
+  - **Rationale**: NFR Requirements skipped
+- [ ] Infrastructure Design — SKIP
+  - **Rationale**: Desktop app — no cloud infrastructure. Storage is local filesystem (already established pattern).
+- [ ] Code Generation — EXECUTE (per-unit, always)
+  - **Rationale**: Implementation of all units (backend commands + frontend components)
+- [ ] Build and Test — EXECUTE (always)
+  - **Rationale**: Verify cargo check + tsc + vite build pass; provide test instructions
 
 ### OPERATIONS PHASE
 - [ ] Operations — PLACEHOLDER
 
 ---
 
-## Units of Work (từ Units Generation — preview)
-
-Dự kiến 1 unit duy nhất: **"translation-module"** với thứ tự implement:
-
-1. `Cargo.toml` — thêm `reqwest`, `async-trait`, `anyhow`
-2. `translation/mod.rs` — module declarations
-3. `translation/models.rs` — thêm `AppSettings` struct
-4. `translation/chunk_builder.rs` — hoàn thiện với constructor và imports
-5. `translation/providers/openai.rs` — full implementation
-6. `translation/providers/gemini.rs` — full implementation
-7. `translation/providers/deepseek.rs` — full implementation
-8. `translation/provider_factory.rs` — hoàn thiện factory với credentials
-9. `translation/service.rs` — full pipeline implementation
-10. `lib.rs` — khai báo `mod translation`, thêm command
-11. `commands.rs` — thêm `translate_project` command
-
----
+## Estimated Timeline
+- **Total Stages to Execute**: 5 (Application Design, Units Generation, Code Generation per-unit, Build and Test)
+- **Total Stages to Skip**: 6 (User Stories, Functional Design, NFR Req, NFR Design, Infra Design, Operations)
 
 ## Success Criteria
-- **Primary Goal**: `cargo build` thành công, translation module hoạt động end-to-end
-- **Key Deliverables**: 11 files updated/created, Tauri command `translate_project` hoạt động
+- **Primary Goal**: Working video editor with subtitle CRUD, real video playback + overlay, style/overlay configuration, manual save — all integrated with existing project system
+- **Key Deliverables**:
+  1. Backend: 4 new Tauri commands in `commands/editor.rs`
+  2. Frontend: Complete Editor page (VideoPlayer, SubtitleTable, StylePanel, OverlayPanel, EditorToolbar)
+  3. Data model: Extended `project.json` and `subtitles.json` schemas
+  4. Integration: History → Editor navigation, auto-open most recent project
 - **Quality Gates**:
-  - Compile without errors or warnings
-  - TranslationService pipeline đọc config → chunk → translate → save đúng
-  - Partial error handling: chunk lỗi không fail toàn bộ job
-  - Tất cả 3 providers implement `Translator` trait
+  - `cargo check` passes (0 errors)
+  - `tsc --noEmit` passes (0 errors)
+  - `vite build` succeeds
+  - Editor loads project data from disk correctly
+  - Video plays with subtitle overlay synced to time

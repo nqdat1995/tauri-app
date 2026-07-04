@@ -1,55 +1,59 @@
-# Unit of Work — Dependency Matrix
+# Unit of Work Dependencies — Video Editor Feature
 
-## Unit Dependencies
+## Dependency Matrix
 
-| Unit | Depends On | Type | Notes |
-|------|-----------|------|-------|
-| translation-module | storage.rs | Runtime | Đọc/ghi subtitles.json, project.json, settings.json |
-| translation-module | Cargo deps (reqwest, async-trait, anyhow) | Build | HTTP client + error handling |
-| translation-module | OpenAI API | External | HTTPS REST API |
-| translation-module | Gemini API | External | HTTPS REST API |
-| translation-module | DeepSeek API | External | HTTPS REST API |
+| Unit | Depends On | Provides To |
+|------|-----------|-------------|
+| Unit 1: editor-store | — (no dependencies) | Unit 2: types, store, mock data |
+| Unit 2: editor-ui | Unit 1: store, types | Unit 3: defines data contract |
+| Unit 3: editor-backend | Unit 1: type definitions (mirrored) | Unit 2: real data (replaces mock) |
 
-## File-Level Dependency Order (trong unit)
+## Dependency Graph
 
 ```
-Cargo.toml
-    |
-    v
-translation/mod.rs
-    |
-    v
-translation/models.rs  (TranslationSegment, TranslationRequest, TranslationResult, AppSettings)
-    |
-    +---> translation/chunk_builder.rs  (uses TranslationSegment)
-    |
-    +---> translation/providers/mod.rs  (Translator trait — đã có)
-              |
-              +---> translation/providers/openai.rs    (implements Translator)
-              +---> translation/providers/gemini.rs    (implements Translator)
-              +---> translation/providers/deepseek.rs  (implements Translator)
-                        |
-                        v
-              translation/provider_factory.rs  (uses all providers + Translator trait)
-                        |
-                        v
-              translation/service.rs  (uses factory + chunk_builder + storage + models)
-                        |
-                        v
-              lib.rs  (mod translation declaration)
-                        |
-                        v
-              commands.rs  (translate_project command)
++-------------------+
+| Unit 1            |
+| editor-store      |
+| (Types + Zustand) |
++-------------------+
+         |
+         | provides types, store, mock data
+         v
++-------------------+
+| Unit 2            |
+| editor-ui         |
+| (React + CSS)     |
++-------------------+
+         |
+         | defines data contract (what backend must provide)
+         v
++-------------------+
+| Unit 3            |
+| editor-backend    |
+| (Rust + Storage)  |
++-------------------+
 ```
 
-## External Dependencies to Add (Cargo.toml)
+## Integration Points
 
-| Crate | Version | Features | Reason |
-|-------|---------|----------|--------|
-| `reqwest` | `0.11` | `json`, `rustls-tls` | Async HTTP client cho AI APIs |
-| `async-trait` | `0.1` | — | Cho `Translator` trait async fn |
-| `anyhow` | `1` | — | Error type trong providers |
-| `tokio` | `1` | `full` | Async runtime (có thể đã có qua Tauri — verify) |
+### Unit 1 → Unit 2
+- Unit 2 imports types from `types.ts`
+- Unit 2 uses Zustand store from `store.ts`
+- Unit 2 uses mock data during development
+- **Contract**: Store shape and action signatures
 
-## No Cross-Unit Dependencies
-Chỉ có 1 unit nên không có inter-unit dependencies.
+### Unit 2 → Unit 3
+- Unit 3 must produce JSON matching TypeScript types exactly
+- Unit 3 command names must match Tauri invoke wrappers from Unit 1
+- After Unit 3 is complete: remove mock fallback, connect real commands
+- **Contract**: Tauri command input/output shapes
+
+### Shared Dependencies (across units)
+- `project.json` schema (editor_style + editor_overlays fields)
+- `subtitles.json` schema (with is_new field)
+- Tauri command names: `load_editor_project`, `save_editor_project`, `get_recent_project`, `list_editor_projects`
+
+## Integration Verification Checklist
+- [ ] After Unit 1: Store compiles, mock data loads, types consistent
+- [ ] After Unit 2: Full UI renders with mock data, all interactions work
+- [ ] After Unit 3: Backend compiles, frontend switches to real data, save/load works end-to-end

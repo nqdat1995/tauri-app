@@ -1,132 +1,172 @@
-# Requirements Verification Questions
+# Requirements Verification Questions — Video Editor Feature
 
-Hãy điền câu trả lời vào thẻ `[Answer]:` của từng câu hỏi.
-Nếu không có option nào phù hợp, chọn option cuối (X/Other) và mô tả sau thẻ `[Answer]:`.
+Dựa trên mockup `video-editor-design.png` và kiến trúc hiện tại, vui lòng trả lời các câu hỏi sau để làm rõ phạm vi và yêu cầu cho tính năng "Trình chỉnh sửa video".
 
 ---
 
 ## Question 1
-Khi dịch một project, ứng dụng cần đọc thông tin API key và provider từ đâu?
+Phạm vi chức năng video editor bao gồm những gì?
 
-A) Đọc từ file settings/config riêng trong project directory (ví dụ: `settings.json`)
+A) Chỉ chỉnh sửa phụ đề (text, timing) + style phụ đề (font, màu, nền) — không xuất video thực tế
 
-B) Đọc từ một file config global của app (ví dụ: `~/.tauri-translate-app/settings.json`)
+B) Chỉnh sửa phụ đề + style + xuất video mới có burn-in phụ đề (dùng FFmpeg render)
 
-C) Frontend truyền thẳng xuống qua Tauri command khi gọi translate (API key, provider, target_lang là params của lệnh)
+C) Chỉnh sửa phụ đề + style + xuất video + tạo lại audio (TTS từ phụ đề dịch)
 
-D) Đọc từ `.env` file trong workspace root
+D) Toàn bộ: chỉnh sửa phụ đề + style + overlay (logo/watermark) + xuất video + tạo lại audio
 
-X) Other (please describe after [Answer]: tag below)
+E) Other (please describe after [Answer]: tag below)
 
-[Answer]: B
+[Answer]: Chia làm 2 giai đoạn:
+- Giai đoạn 1: A + lưu lại thông tin mà người dùng edit nhằm mục đích sử dụng cho việc xuất video trong tương lai
+- Giai đoạn 2: Thực hiện xuất video theo đúng những gì mà người dùng đã edit
 
 ---
 
 ## Question 2
-Khi dịch, kết quả translation được lưu ở đâu?
+Video player trong editor có cần phát video thực tế (real playback) hay chỉ cần hiển thị UI placeholder (mockup)?
 
-A) Ghi đè vào `subtitles.json` (thêm field `translated_content` vào từng cue)
+A) Phát video thực tế từ file local (sử dụng HTML5 video + asset:// protocol)
 
-B) Tạo file mới `translation.json` trong project directory (độc lập với subtitles.json)
+B) UI placeholder — không cần phát video thực, chỉ cần giao diện đẹp để demo
 
-C) Tạo file mới với tên theo ngôn ngữ đích, ví dụ: `subtitles_vi.json`
+C) Phát video thực tế + hiển thị subtitle overlay đồng bộ theo thời gian
 
-D) Ghi vào trong `project.json` trực tiếp
+D) Other (please describe after [Answer]: tag below)
 
-X) Other (please describe after [Answer]: tag below)
+[Answer]: C + hiển thị subtitle với đúng style mà người dùng đã chọn
+
+---
+
+## Question 3
+Dữ liệu cho editor lấy từ đâu?
+
+A) Từ project đã hoàn thành STT (load từ `projects/{id}/subtitles.json` + `project.json`)
+
+B) Từ project trong History — user chọn project từ tab Lịch sử rồi mở trong Editor
+
+C) Cả hai: có thể mở từ History hoặc tự động mở sau khi STT hoàn thành
+
+D) Other (please describe after [Answer]: tag below)
+
+[Answer]: C
+
+---
+
+## Question 4
+Chức năng "Xuất Video" cụ thể làm gì ở backend (Rust)?
+
+A) Gọi FFmpeg để burn-in subtitle vào video gốc → tạo file video mới
+
+B) Chỉ xuất file SRT/ASS (file phụ đề) — không render video
+
+C) Xuất file SRT + option burn-in video (user chọn)
+
+D) Xuất video + tạo audio mới từ TTS (text-to-speech từ bản dịch)
+
+E) Other (please describe after [Answer]: tag below)
+
+[Answer]: Chỉ thực hiện xuất video trong giai đoạn 2. Thực hiện gọi sidecar để tạo audio mới từ TTS, sau đó thực hiện gọi FFmpeg để tạo file video mới
+
+---
+
+## Question 5
+Chức năng "Tạo lại âm thanh" (Recreate Audio) hoạt động thế nào?
+
+A) Gọi TTS API (text-to-speech) từ văn bản dịch → tạo audio track mới → ghép vào video
+
+B) Chỉ là placeholder/UI button — chưa cần implement backend
+
+C) Gọi TTS API + cho phép user chọn giọng/ngôn ngữ trước khi tạo
+
+D) Other (please describe after [Answer]: tag below)
+
+[Answer]: Gọi sidecar để tạo audio mới từ TTS. Tôi sẽ cung cấp thông tin API khi thực hiện tới giai đoạn 2
+
+---
+
+## Question 6
+Subtitle style (font, màu, nền, vị trí) được lưu trữ như thế nào?
+
+A) Lưu vào `project.json` → mỗi project có style riêng
+
+B) Lưu riêng thành file style preset (`styles.json`) ở app level — dùng chung cho mọi project
+
+C) Cả hai: có global presets + mỗi project lưu active style trong `project.json`
+
+D) Other (please describe after [Answer]: tag below)
 
 [Answer]: A
 
 ---
 
-## Question 3
-Prompt gửi lên AI provider cho việc dịch phụ đề cần theo format nào?
+## Question 7
+Khi user chỉnh sửa phụ đề (thay đổi text, timing, xóa), thay đổi được lưu khi nào?
 
-A) Gửi raw text và yêu cầu AI dịch, parse response bằng line matching (segment theo dòng)
+A) Auto-save: mỗi thay đổi lưu ngay vào `subtitles.json`
 
-B) Gửi JSON array của segments, yêu cầu AI trả về JSON array với các segment đã dịch (structured output)
+B) Manual save: user bấm nút "Lưu" mới persist
 
-C) Gửi từng segment một cách độc lập (1 API call / segment)
+C) Auto-save sau debounce (vd: 2 giây không thay đổi thì lưu)
 
-D) Gửi numbered list dạng `1. [text]`, yêu cầu AI trả về `1. [translated]` để parse theo số thứ tự
+D) Other (please describe after [Answer]: tag below)
 
-X) Other (please describe after [Answer]: tag below)
-
-[Answer]: B
+[Answer]: B + ngoài phụ đề có sẵn thì cho phép người dùng thêm mới phụ đề
 
 ---
 
-## Question 4
-Với `ChunkBuilder`, tiêu chí split chunk là gì?
+## Question 8
+Tab "Overlay" trong Style Panel (như mockup) cần implement gì?
 
-A) Chỉ theo số lượng segments (max N segments/chunk) — đơn giản nhất
+A) Implement đầy đủ: thêm hình ảnh/logo/watermark lên video
 
-B) Theo ước tính số tokens (dựa trên độ dài text) để không vượt context limit
+B) Chỉ tạo UI shell (placeholder) — implement sau
 
-C) Theo thời lượng phụ đề (ví dụ: max 2 phút/chunk)
+C) Không cần — bỏ tab Overlay
 
-D) Kết hợp: ưu tiên token limit, fallback về segment count
+D) Other (please describe after [Answer]: tag below)
 
-X) Other (please describe after [Answer]: tag below)
-
-[Answer]: A, N sẽ được đọc từ một file config global của app
-
----
-
-## Question 5
-Khi một chunk bị lỗi khi dịch (API timeout, rate limit, bad response), behavior mong muốn là gì?
-
-A) Retry chunk đó (tối đa 3 lần) rồi fail toàn bộ job nếu vẫn không được
-
-B) Skip chunk lỗi, tiếp tục dịch các chunk còn lại, báo lỗi từng phần ở cuối
-
-C) Fail ngay lập tức, không retry, trả về lỗi
-
-D) Retry với exponential backoff (1s, 2s, 4s) rồi mới fail
-
-X) Other (please describe after [Answer]: tag below)
-
-[Answer]: B
+[Answer]: Cho phép người dùng thêm:
+- Nền phủ: Chọn màu + Độ rõ
+- Kính mờ: Chọn màu + Độ rõ
+- Hiệu ứng gương
+- Chữ
+- Logo
+- Watermark
+Tất cả các hiệu ứng đều có các tính năng chung sau: Thay đổi kích cỡ, vị trí, enable/disable
 
 ---
 
-## Question 6
-Frontend cần nhận progress updates khi đang dịch không?
+## Question 9
+Editor mở project nào khi user click vào tab "Trình chỉnh sửa"?
 
-A) Có — emit Tauri events theo từng chunk hoàn thành (tương tự `upload_progress` event trong STT pipeline)
+A) Mở project gần nhất (most recently processed)
 
-B) Không cần — chỉ cần biết kết quả cuối cùng (success/fail)
+B) Hiển thị danh sách project để user chọn
 
-C) Có — nhưng chỉ emit event khi bắt đầu và kết thúc (2 events)
+C) Trống (empty state) — user phải chọn project từ History trước
 
-X) Other (please describe after [Answer]: tag below)
+D) Mở project cuối cùng mà user đã edit
 
-[Answer]: B
+E) Other (please describe after [Answer]: tag below)
 
----
-
-## Question 7: Security Extension
-Should security extension rules be enforced for this project?
-
-A) Yes — enforce all SECURITY rules as blocking constraints (recommended for production-grade applications)
-
-B) No — skip all SECURITY rules (suitable for PoCs, prototypes, and experimental projects)
-
-X) Other (please describe after [Answer]: tag below)
-
-[Answer]: B
+[Answer]: A
 
 ---
 
-## Question 8: Property-Based Testing Extension
-Should property-based testing (PBT) rules be enforced for this project?
+## Question 10
+Backend Tauri commands cần thêm cho editor — xác nhận phạm vi:
 
-A) Yes — enforce all PBT rules as blocking constraints
+A) Chỉ cần commands đọc/ghi subtitle + style (CRUD cơ bản) — không cần FFmpeg export trong phase này
 
-B) Partial — enforce PBT rules only for pure functions and serialization round-trips
+B) Cần full commands: đọc/ghi subtitle + style + FFmpeg video export + TTS audio
 
-C) No — skip all PBT rules (suitable for simple CRUD, UI-only, or thin integration layers)
+C) CRUD subtitle + style + FFmpeg video export (không TTS)
 
-X) Other (please describe after [Answer]: tag below)
+D) Other (please describe after [Answer]: tag below)
 
-[Answer]: C
+[Answer]: Chia làm 2 giai đoạn:
+- Giai đoạn 1: A + lưu lại thông tin mà người dùng edit nhằm mục đích sử dụng cho việc xuất video trong tương lai
+- Giai đoạn 2: Thực hiện xuất video theo đúng những gì mà người dùng đã edit
+
+---

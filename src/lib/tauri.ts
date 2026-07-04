@@ -86,3 +86,28 @@ export async function loadHistory(): Promise<ProjectRecord[]> {
 export async function listModels(provider: string, apiKey: string): Promise<ModelInfo[]> {
   return invokeCommand<ModelInfo[]>("list_models", { provider, apiKey });
 }
+
+
+// ─── Editor Commands ─────────────────────────────────────────────
+
+import type { LoadEditorResponse, SaveEditorRequest, ProjectSummary } from "../pages/Editor/types";
+
+/** Load a project for editing (project.json + subtitles.json) */
+export async function loadEditorProject(projectId: string): Promise<LoadEditorResponse> {
+  return invokeCommand<LoadEditorResponse>("load_editor_project", { projectId });
+}
+
+/** Save edited subtitles, style, and overlays to disk */
+export async function saveEditorProject(projectId: string, request: SaveEditorRequest): Promise<void> {
+  return invokeCommand<void>("save_editor_project", { projectId, request });
+}
+
+/** Get the most recently processed project ID */
+export async function getRecentProject(): Promise<string | null> {
+  return invokeCommand<string | null>("get_recent_project");
+}
+
+/** List all projects available for editing */
+export async function listEditorProjects(): Promise<ProjectSummary[]> {
+  return invokeCommand<ProjectSummary[]>("list_editor_projects");
+}
