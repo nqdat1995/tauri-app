@@ -102,7 +102,7 @@ function ProjectThumb({ projectId, thumbnailRelPath, duration }: ThumbProps) {
 
 // ── Main History component ────────────────────────────────────────────────────
 
-export function History() {
+export function History({ onOpenInEditor }: { onOpenInEditor?: (projectId: string) => void }) {
   const [projects, setProjects] = useState<ProjectRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -247,6 +247,7 @@ export function History() {
                 <th>Thông tin media</th>
                 <th>Trạng thái</th>
                 <th>Cập nhật</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -288,6 +289,18 @@ export function History() {
                   </td>
                   <td>
                     <span className="date-cell">{formatDate(project.updated_at)}</span>
+                  </td>
+                  <td>
+                    {project.status === "completed" && onOpenInEditor && (
+                      <button
+                        className="history-edit-btn"
+                        type="button"
+                        onClick={() => onOpenInEditor(project.id)}
+                        data-testid={`history-edit-${project.id}`}
+                      >
+                        ✏️ Chỉnh sửa
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

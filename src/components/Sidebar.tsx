@@ -3,6 +3,7 @@
 interface SidebarProps {
   activeTab: TabKey;
   onChange: (tab: TabKey) => void;
+  isDirty?: boolean;
 }
 
 const tabs: Array<{ key: TabKey; label: string }> = [
@@ -13,7 +14,7 @@ const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "settings", label: "Cài đặt" },
 ];
 
-export function Sidebar({ activeTab, onChange }: SidebarProps) {
+export function Sidebar({ activeTab, onChange, isDirty }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="logo">
@@ -26,8 +27,12 @@ export function Sidebar({ activeTab, onChange }: SidebarProps) {
             key={tab.key}
             className={`menu ${activeTab === tab.key ? "active" : ""}`}
             onClick={() => onChange(tab.key)}
+            data-testid={`sidebar-tab-${tab.key}`}
           >
             {tab.label}
+            {tab.key === "editor" && isDirty && (
+              <span className="sidebar-dirty-dot" title="Thay đổi chưa lưu" />
+            )}
           </button>
         ))}
       </nav>

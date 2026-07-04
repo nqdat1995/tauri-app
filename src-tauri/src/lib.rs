@@ -7,10 +7,14 @@ mod project;
 mod storage;
 mod translation;
 mod commands;
+mod editor;
 
 use commands::{
     cancel_pending_jobs, enqueue_job, get_file_metadata, greet, list_models, load_history,
     load_settings, save_project, save_settings, start_sidecar, translate_project,
+};
+use editor::commands::{
+    get_recent_project, list_editor_projects, load_editor_project, save_editor_project,
 };
 use sidecar::ensure_sidecar_running_pub;
 use state::AppState;
@@ -45,7 +49,11 @@ pub fn run() {
             load_settings,
             save_settings,
             load_history,
-            list_models
+            list_models,
+            load_editor_project,
+            save_editor_project,
+            get_recent_project,
+            list_editor_projects
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

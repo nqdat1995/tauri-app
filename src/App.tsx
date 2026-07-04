@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { applyTheme } from "./config/ui";
 import { Sidebar, TabKey } from "./components/Sidebar";
@@ -7,40 +7,59 @@ import { History } from "./pages/History";
 import { Editor } from "./pages/Editor";
 import { SrtToAudio } from "./pages/SrtToAudio";
 import { Settings } from "./pages/Settings";
-
-const pageMap: Record<TabKey, JSX.Element> = {
-  home: <Home />,
-  history: <History />,
-  editor: <Editor />,
-  srt: <SrtToAudio />,
-  settings: <Settings />,
-};
+import { useEditorStore } from "./pages/Editor/store";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>("home");
+  const [activeEditorProjectId, setActiveEditorProjectId] = useState<string | null>(null);
+  const isDirty = useEditorStore((s) => s.isDirty);
+  const resetDirty = useEditorStore((s) => s.resetDirty);
 
   useEffect(() => {
-    // apply design tokens (CSS variables) from central config
-    try {
-      applyTheme();
-    } catch (e) {
-      /* no-op if run outside browser */
-    }
-
+    try { applyTheme(); } catch { /* no-op */ }
     const window = getCurrentWindow();
-    window.maximize().catch(() => {
-      // ignore if not running inside Tauri or maximize fails
-    });
+    window.maximize().catch(() => {});
+    window.setFullscreen(true).catch(() => {});
+  }, []);
 
-    window.setFullscreen(true).catch(() => {
-      // ignore if not running inside Tauri or full screen fails
-    });
+  // Navigation with unsaved changes protection
+  const handleTabChange = useCallback((newTab: TabKey) => {
+    if (activeTab === "editor" && isDirty && newTab !== "editor") {
+      const choice = window.confirm(
+        "Bạn có thay đổi chưa lưu. Bạn muốn lưu trước khi rời đi không?\n\nOK = Rời mà không lưu\nCancel = Ở lại"
+      );
+      if (!choice) return; // Stay on editor
+      resetDirty(); // Discard changes
+    }
+    setActiveTab(newTab);
+  }, [activeTab, isDirty, resetDirty]);
+
+  // Navigate to editor with a specific project
+  const handleOpenInEditor = useCallback((projectId: string) => {
+    setActiveEditorProjectId(projectId);
+    setActiveTab("editor");
+  }, []);
+
+  // Navigate to history from editor (e.g., on video missing error)
+  const handleNavigateToHistory = useCallback(() => {
+    setActiveTab("history");
   }, []);
 
   return (
     <div className="app">
-      <Sidebar activeTab={activeTab} onChange={setActiveTab} />
-      <main>{pageMap[activeTab]}</main>
+      <Sidebar activeTab={activeTab} onChange={handleTabChange} isDirty={activeTab === "editor" && isDirty} />
+      <main>
+        {activeTab === "home" && <Home />}
+        {activeTab === "history" && <History onOpenInEditor={handleOpenInEditor} />}
+        {activeTab === "editor" && (
+          <Editor
+            projectId={activeEditorProjectId}
+            onNavigateToHistory={handleNavigateToHistory}
+          />
+        )}
+        {activeTab === "srt" && <SrtToAudio />}
+        {activeTab === "settings" && <Settings />}
+      </main>
     </div>
   );
 }

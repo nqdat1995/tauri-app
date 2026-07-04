@@ -1,80 +1,56 @@
-# Build Instructions
+# Build Instructions — Video Editor Feature
 
 ## Prerequisites
-
-- **Build Tool**: Cargo (Rust) + Tauri CLI v2
-- **Rust**: stable toolchain (1.77+)  —  `rustup update stable`
-- **Node.js**: 18+ (cho Tauri frontend build)
-- **Environment Variables**: không bắt buộc cho build; API keys được đọc từ `~/.tauri-translate-app/settings.json` ở runtime
-- **System Requirements**: Windows 10+, 4GB RAM, 2GB disk
+- **Rust**: stable (edition 2021)
+- **Node.js**: >=18.x
+- **npm**: >=9.x
+- **Tauri CLI**: v2.x
+- **System**: macOS / Windows / Linux
 
 ## Build Steps
 
-### 1. Cài đặt Rust dependencies
-
+### 1. Install Frontend Dependencies
 ```bash
-cd src-tauri
-cargo fetch
+cd /Users/maiphan/n8n/tauri-app
+npm install
 ```
+This installs `zustand`, `react-rnd`, and all existing dependencies.
 
-### 2. Check compilation (nhanh, không tạo binary)
+### 2. Verify TypeScript Compilation
+```bash
+npx tsc --noEmit
+```
+**Expected**: 0 errors.
 
+### 3. Build Frontend (Vite)
+```bash
+npx vite build
+```
+**Expected**: `✓ built in ~1s`, outputs to `dist/`.
+
+### 4. Check Rust Backend
 ```bash
 cd src-tauri
 cargo check
 ```
+**Expected**: `Finished dev profile`, 0 errors, 0 warnings.
 
-**Expected output**: `Finished \`dev\` profile [unoptimized + debuginfo] target(s) in Xs`
-
-### 3. Build debug binary
-
+### 5. Full Tauri Build (optional — for production)
 ```bash
-cd src-tauri
-cargo build
+cd /Users/maiphan/n8n/tauri-app
+npx tauri build
 ```
+**Expected**: Produces platform-specific installer in `src-tauri/target/release/bundle/`.
 
-**Expected output**: `Finished \`dev\` profile ... target(s) in Xs`
-**Artifact**: `src-tauri/target/debug/tauri-app.exe` (Windows)
-
-### 4. Build release binary
-
-```bash
-cd src-tauri
-cargo build --release
-```
-
-**Artifact**: `src-tauri/target/release/tauri-app.exe`
-
-### 5. Full Tauri app build (với frontend)
-
-```bash
-# Từ workspace root
-npm install        # hoặc yarn / pnpm install
-npm run tauri build
-```
-
-**Artifacts**: `src-tauri/target/release/bundle/`
-
-### 6. Verify Build Success
-
-- `cargo check` — không có errors, chỉ warnings là OK
-- `cargo build` — binary được tạo trong `target/debug/`
-- Không có `error[EXXXX]` trong output
+## Build Artifacts
+- `dist/` — Frontend bundle (HTML + JS + CSS)
+- `src-tauri/target/debug/tauri-app` — Debug binary
+- `src-tauri/target/release/bundle/` — Release installer (after `tauri build`)
 
 ## Troubleshooting
 
-### `error[E0432]: unresolved import`
-- **Cause**: Module chưa được khai báo trong `mod.rs` hoặc `lib.rs`
-- **Solution**: Kiểm tra `src/lib.rs` có `mod translation;` và `src/translation/mod.rs` có các `pub mod` đầy đủ
+### `Command get_recent_project not found`
+This occurs if running the frontend without the Rust backend (dev mode without `tauri dev`). Use `npx tauri dev` to run both together.
 
-### `error[E0425]: cannot find function`
-- **Cause**: Function chưa được import hoặc tên sai
-- **Solution**: Kiểm tra `use` statements ở đầu file
-
-### `reqwest` SSL errors khi build
-- **Cause**: Missing OpenSSL dev headers
-- **Solution**: Cargo feature `rustls-tls` đã được dùng thay vì native-tls — không cần OpenSSL
-
-### `async-trait` not found
-- **Cause**: Dependency chưa được thêm vào Cargo.toml
-- **Solution**: Kiểm tra `Cargo.toml` có dòng `async-trait = "0.1"`
+### Missing `zustand` or `react-rnd`
+Run `npm install` to ensure all dependencies are installed.
