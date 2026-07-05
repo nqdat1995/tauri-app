@@ -1,6 +1,35 @@
-use super::models::{EditorProjectData, EditorProjectResponse, EditorStyle, ProjectSummary, SaveEditorRequest};
+use super::models::{EditorProjectData, EditorProjectResponse, EditorStyle, ProjectSummary, SaveEditorRequest, SubtitleCue};
 use super::validation::{validate_overlays, validate_style, validate_subtitles};
 use crate::storage;
+
+/// Represents a subtitle cue as stored by the STT pipeline (snake_case, milliseconds).
+#[derive(Debug, Clone, serde::Deserialize)]
+struct SttSubtitleCue {
+    pub cue_id: String,
+    #[allow(dead_code)]
+    pub sequence: Option<usize>,
+    pub start_time: u64, // milliseconds
+    pub end_time: u64,   // milliseconds
+    #[allow(dead_code)]
+    pub duration: Option<u64>,
+    pub content: String,
+    pub translated_content: Option<String>,
+}
+
+/// Convert STT-format cues to editor-format cues.
+fn convert_stt_cues(stt_cues: Vec<SttSubtitleCue>) -> Vec<SubtitleCue> {
+    stt_cues
+        .into_iter()
+        .map(|c| SubtitleCue {
+            id: c.cue_id,
+            start_time: c.start_time as f64 / 1000.0,
+            end_time: c.end_time as f64 / 1000.0,
+            original_text: c.content,
+            translated_text: c.translated_content.unwrap_or_default(),
+            is_new: false,
+        })
+        .collect()
+}
 
 /// Load a project for editing: reads project.json + subtitles.json.
 /// Returns videoMissing=true if the source video file no longer exists.
@@ -15,12 +44,22 @@ pub async fn load_editor_project(project_id: String) -> Result<EditorProjectResp
     let project_json: serde_json::Value =
         storage::read_json_file(&project_path)?;
 
-    // Read subtitles.json
+    // Read subtitles.json — supports both STT format (snake_case, ms) and editor format (camelCase, seconds)
     let mut subtitles_path = storage::project_dir(&project_id)?;
     subtitles_path.push("subtitles.json");
 
-    let subtitles = if subtitles_path.exists() {
-        storage::read_json_file(&subtitles_path)?
+    let subtitles: Vec<SubtitleCue> = if subtitles_path.exists() {
+        // Try editor format first (camelCase)
+        match storage::read_json_file::<Vec<SubtitleCue>>(&subtitles_path) {
+            Ok(cues) => cues,
+            Err(_) => {
+                // Fall back to STT format (snake_case, milliseconds)
+                match storage::read_json_file::<Vec<SttSubtitleCue>>(&subtitles_path) {
+                    Ok(stt_cues) => convert_stt_cues(stt_cues),
+                    Err(e) => return Err(format!("Failed to parse subtitles.json: {}", e)),
+                }
+            }
+        }
     } else {
         Vec::new()
     };
