@@ -7,6 +7,18 @@ import { useEditorStore } from "./store";
 import { PRESET_STYLES, FONT_OPTIONS } from "./constants";
 import type { BgShape, SubtitlePosition } from "./types";
 
+const POSITION_OPTIONS: { value: SubtitlePosition; label: string }[] = [
+  { value: "top-left", label: "Trên trái" },
+  { value: "top-center", label: "Trên giữa" },
+  { value: "top-right", label: "Trên phải" },
+  { value: "middle-left", label: "Giữa trái" },
+  { value: "center", label: "Giữa" },
+  { value: "middle-right", label: "Giữa phải" },
+  { value: "bottom-left", label: "Dưới trái" },
+  { value: "bottom-center", label: "Dưới giữa" },
+  { value: "bottom-right", label: "Dưới phải" },
+];
+
 type PanelTab = "style" | "overlay";
 
 interface StylePanelProps {
@@ -63,9 +75,10 @@ export function StylePanel({ onTabChange, activeTab }: StylePanelProps) {
                       color: preset.textColor,
                       backgroundColor: preset.bgShape !== "none"
                         ? `${preset.bgColor}${Math.round((preset.bgOpacity / 100) * 255).toString(16).padStart(2, "0")}`
-                        : "transparent",
+                        : "#f3f4f6",
                       borderRadius: preset.bgShape === "rounded" ? "4px" : "2px",
-                      border: preset.bgShape === "none" ? "1px solid #e5e7eb" : "none",
+                      border: preset.bgShape === "none" ? "1px dashed #d1d5db" : "none",
+                      textShadow: preset.bgShape === "none" && preset.textColor === "#ffffff" ? "0 0 2px rgba(0,0,0,0.5)" : "none",
                     }}
                   >
                     {preset.id === "no-subtitle" ? "Không phụ đề" : "Xin chào"}
@@ -149,8 +162,9 @@ export function StylePanel({ onTabChange, activeTab }: StylePanelProps) {
                   onChange={(e) => updateStyle({ position: e.target.value as SubtitlePosition })}
                   data-testid="style-panel-position"
                 >
-                  <option value="bottom">Dưới</option>
-                  <option value="top">Trên</option>
+                  {POSITION_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
               </div>
             </div>

@@ -105,8 +105,19 @@ export const useEditorStore = create<EditorState & EditorActions>((set, get) => 
           return;
         }
 
+        // Convert video path to asset:// URL for browser playback
+        let videoUrl = response.project.videoPath;
+        if (videoUrl && !videoUrl.startsWith("asset://") && !videoUrl.startsWith("http")) {
+          try {
+            const { toAssetUrl } = await import("../../lib/tauri");
+            videoUrl = await toAssetUrl(videoUrl);
+          } catch {
+            // non-fatal — video preview will just not work
+          }
+        }
+
         set({
-          project: response.project,
+          project: { ...response.project, videoPath: videoUrl },
           subtitles: response.project.subtitles,
           activeStyle: response.project.activeStyle,
           overlays: response.project.overlays,

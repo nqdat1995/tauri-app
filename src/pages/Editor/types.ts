@@ -17,7 +17,7 @@ export interface SubtitleCue {
 // ─── Style Types ─────────────────────────────────────────────────
 
 export type BgShape = "box" | "rounded" | "none";
-export type SubtitlePosition = "top" | "bottom";
+export type SubtitlePosition = "top-left" | "top-center" | "top-right" | "middle-left" | "center" | "middle-right" | "bottom-left" | "bottom-center" | "bottom-right";
 
 export interface SubtitleStyle {
   id: string;

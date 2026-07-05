@@ -25,7 +25,7 @@ export function OverlayPanel() {
     <div className="overlay-panel" data-testid="overlay-panel">
       {/* Effect type buttons */}
       <div className="overlay-panel__section">
-        <h3 className="overlay-panel__section-title">Thêm hiệu ứng</h3>
+        <h4 className="overlay-panel__section-title">Thêm hiệu ứng</h4>
         <div className="overlay-panel__buttons" data-testid="overlay-panel-buttons">
           {OVERLAY_TYPES.map((ot) => {
             const count = getTypeCount(ot.type);
@@ -37,7 +37,7 @@ export function OverlayPanel() {
                 type="button"
                 disabled={disabled}
                 onClick={() => addOverlay(ot.type)}
-                title={disabled ? `Tối đa ${MAX_OVERLAY_INSTANCES} phần tử` : `Thêm ${ot.label}`}
+                title={disabled ? `Tối đa ${MAX_OVERLAY_INSTANCES}` : `Thêm ${ot.label}`}
                 data-testid={`overlay-add-${ot.type}`}
               >
                 <span className="overlay-panel__type-icon">{ot.icon}</span>

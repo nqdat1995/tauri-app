@@ -59,7 +59,7 @@ export const PRESET_STYLES: SubtitleStyle[] = [
     textColor: "#ffffff",
     bgColor: "transparent",
     bgShape: "none",
-    position: "bottom",
+    position: "bottom-center",
     bgOpacity: 0,
   },
   {
@@ -70,7 +70,7 @@ export const PRESET_STYLES: SubtitleStyle[] = [
     textColor: "#ffffff",
     bgColor: "#000000",
     bgShape: "rounded",
-    position: "bottom",
+    position: "bottom-center",
     bgOpacity: 80,
   },
   {
@@ -81,7 +81,7 @@ export const PRESET_STYLES: SubtitleStyle[] = [
     textColor: "#ffffff",
     bgColor: "#dc2626",
     bgShape: "rounded",
-    position: "bottom",
+    position: "bottom-center",
     bgOpacity: 92,
   },
   {
@@ -92,7 +92,7 @@ export const PRESET_STYLES: SubtitleStyle[] = [
     textColor: "#ffffff",
     bgColor: "#2563eb",
     bgShape: "rounded",
-    position: "bottom",
+    position: "bottom-center",
     bgOpacity: 80,
   },
   {
@@ -103,7 +103,7 @@ export const PRESET_STYLES: SubtitleStyle[] = [
     textColor: "#1f2937",
     bgColor: "transparent",
     bgShape: "none",
-    position: "bottom",
+    position: "bottom-center",
     bgOpacity: 0,
   },
   {
@@ -114,7 +114,7 @@ export const PRESET_STYLES: SubtitleStyle[] = [
     textColor: "#ffffff",
     bgColor: "transparent",
     bgShape: "none",
-    position: "bottom",
+    position: "bottom-center",
     bgOpacity: 0,
   },
   {
@@ -125,7 +125,7 @@ export const PRESET_STYLES: SubtitleStyle[] = [
     textColor: "#fbbf24",
     bgColor: "#000000",
     bgShape: "rounded",
-    position: "bottom",
+    position: "bottom-center",
     bgOpacity: 85,
   },
   {
@@ -136,7 +136,7 @@ export const PRESET_STYLES: SubtitleStyle[] = [
     textColor: "#ffffff",
     bgColor: "#5b44ff",
     bgShape: "rounded",
-    position: "bottom",
+    position: "bottom-center",
     bgOpacity: 90,
   },
   {
@@ -147,7 +147,7 @@ export const PRESET_STYLES: SubtitleStyle[] = [
     textColor: "#fbbf24",
     bgColor: "#dc2626",
     bgShape: "box",
-    position: "bottom",
+    position: "bottom-center",
     bgOpacity: 92,
   },
   {
@@ -158,7 +158,7 @@ export const PRESET_STYLES: SubtitleStyle[] = [
     textColor: "#ffffff",
     bgColor: "#059669",
     bgShape: "rounded",
-    position: "bottom",
+    position: "bottom-center",
     bgOpacity: 85,
   },
 ];
