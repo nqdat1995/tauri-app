@@ -154,7 +154,7 @@ export function VideoPlayer() {
         )}
 
         {/* Overlay items rendered on viewport */}
-        {visibleOverlays.map((item) => (
+        {viewportSize.width > 0 && visibleOverlays.map((item) => (
           <OverlayItemView
             key={item.id}
             item={item}
@@ -168,7 +168,7 @@ export function VideoPlayer() {
         {activeCue && viewportSize.width > 0 && (
           <Rnd
             position={subtitlePos}
-            size={{ width: viewportSize.width * 0.8, height: "auto" as any }}
+            size={{ width: viewportSize.width * 0.8, height: 50 }}
             bounds="parent"
             enableResizing={false}
             onDragStop={(_e, d) => setSubtitlePos({ x: d.x, y: d.y })}
@@ -286,8 +286,10 @@ function OverlayItemView({ item, containerWidth, containerHeight, onUpdate }: {
   // Draggable/resizable items: text, logo, watermark
   const x = item.position.x * scaleX;
   const y = item.position.y * scaleY;
-  const w = item.size.width * scaleX;
-  const h = item.size.height * scaleY;
+  const w = Math.max(20, item.size.width * scaleX);
+  const h = Math.max(20, item.size.height * scaleY);
+
+  if (isNaN(x) || isNaN(y) || isNaN(w) || isNaN(h)) return null;
 
   let content: React.ReactNode = <span>{typeInfo?.icon} {typeInfo?.label}</span>;
   if (item.type === "text") {

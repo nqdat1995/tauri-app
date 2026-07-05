@@ -4,7 +4,7 @@
  * FR-ED-11: Navigate from History to Editor
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Component, type ReactNode } from "react";
 import { useEditorStore } from "./store";
 import { EditorToolbar } from "./EditorToolbar";
 import { VideoPlayer } from "./VideoPlayer";
@@ -13,12 +13,42 @@ import { StylePanel } from "./StylePanel";
 import { OverlayPanel } from "./OverlayPanel";
 import "./editor.css";
 
+// Error boundary to prevent white screen crashes
+class EditorErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: string }> {
+  state = { hasError: false, error: "" };
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="editor-page editor-page--error">
+          <div className="editor-empty">
+            <h2>Lỗi hiển thị</h2>
+            <p>{this.state.error}</p>
+            <button className="btn-outline" onClick={() => this.setState({ hasError: false, error: "" })}>Thử lại</button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 interface EditorProps {
   projectId?: string | null;
   onNavigateToHistory?: () => void;
 }
 
 export function Editor({ projectId, onNavigateToHistory }: EditorProps) {
+  return (
+    <EditorErrorBoundary>
+      <EditorContent projectId={projectId} onNavigateToHistory={onNavigateToHistory} />
+    </EditorErrorBoundary>
+  );
+}
+
+function EditorContent({ projectId, onNavigateToHistory }: EditorProps) {
   const project = useEditorStore((s) => s.project);
   const isLoading = useEditorStore((s) => s.isLoading);
   const error = useEditorStore((s) => s.error);
@@ -30,11 +60,18 @@ export function Editor({ projectId, onNavigateToHistory }: EditorProps) {
   const [showErrorDialog, setShowErrorDialog] = useState(false);
 
   useEffect(() => {
-    if (projectId) {
-      loadProject(projectId);
-    } else if (!project && !isLoading) {
-      loadRecentProject();
-    }
+    const doLoad = async () => {
+      try {
+        if (projectId) {
+          await loadProject(projectId);
+        } else if (!project && !isLoading) {
+          await loadRecentProject();
+        }
+      } catch (e) {
+        console.error("[Editor] Load failed:", e);
+      }
+    };
+    doLoad();
   }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
