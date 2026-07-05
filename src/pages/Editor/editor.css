@@ -149,21 +149,20 @@
 .overlay-panel__config-note { margin: 0; font-size: 0.75rem; color: var(--muted); font-style: italic; }
 
 /* Overlay Viewport (react-rnd items) */
-.overlay-viewport { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
-.overlay-viewport__item { border: 2px solid rgba(91,68,255,0.5); background: rgba(91,68,255,0.04); border-radius: 6px; pointer-events: auto; display: flex; align-items: center; justify-content: center; cursor: move !important; position: relative; overflow: hidden; }
-.overlay-viewport__item:hover { border-color: rgba(91,68,255,0.8); box-shadow: 0 0 0 2px rgba(91,68,255,0.15); }
-.overlay-viewport__item--text { border-style: dashed; }
-.overlay-viewport__item-label { font-size: 0.7rem; color: rgba(91,68,255,0.9); font-weight: 600; white-space: nowrap; pointer-events: none; }
-.overlay-box__fill { width: 100%; height: 100%; border-radius: 4px; }
-.overlay-box__fill--mirror { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(91,68,255,0.1), rgba(59,130,246,0.1)); font-size: 1.5rem; }
-.overlay-box__text { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
-.overlay-box__img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; user-select: none; }
-.overlay-box__placeholder { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; height: 100%; font-size: 0.72rem; color: rgba(91,68,255,0.8); font-weight: 600; }
-.overlay-box__resize-handle { position: absolute; bottom: 0; right: 0; width: 14px; height: 14px; cursor: se-resize; background: linear-gradient(135deg, transparent 50%, rgba(91,68,255,0.6) 50%); border-radius: 0 0 4px 0; }
+.video-player__bounds { position: absolute; z-index: 3; }
+.ov-item { border: 2px solid rgba(91,68,255,0.5); background: rgba(91,68,255,0.03); border-radius: 6px; pointer-events: auto; display: flex; align-items: center; justify-content: center; cursor: move !important; position: relative; overflow: hidden; transition: border-color 0.15s; }
+.ov-item:hover { border-color: rgba(91,68,255,0.9); box-shadow: 0 0 0 3px rgba(91,68,255,0.12); }
+.ov-item--text { border-style: dashed; }
+.ob-fill { width: 100%; height: 100%; border-radius: 4px; }
+.ob-mirror { overflow: hidden; }
+.ob-text { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.ob-img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+.ob-placeholder { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; height: 100%; font-size: 0.72rem; color: rgba(91,68,255,0.8); font-weight: 600; }
+.ov-resize-handle { position: absolute; bottom: 0; right: 0; width: 14px; height: 14px; cursor: se-resize; background: linear-gradient(135deg, transparent 50%, rgba(91,68,255,0.7) 50%); border-radius: 0 0 4px 0; }
 
 /* Draggable subtitle on video */
-.video-player__subtitle-rnd { z-index: 5 !important; cursor: move !important; pointer-events: auto !important; display: flex !important; align-items: center; justify-content: center; }
-.video-player__subtitle-text { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vp-sub-rnd { z-index: 5 !important; cursor: move !important; pointer-events: auto !important; display: flex !important; align-items: center; justify-content: center; }
+.vp-sub-text { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 
 /* Subtitle time inputs */
@@ -196,3 +195,19 @@
 .video-player__guides { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
 .video-player__guide-h { position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(91,68,255,0.5); border-top: 1px dashed rgba(91,68,255,0.5); }
 .video-player__guide-v { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(91,68,255,0.5); border-left: 1px dashed rgba(91,68,255,0.5); }
+
+
+/* Overlay config fields — styled to match app design */
+.overlay-config__field { margin-bottom: 12px; }
+.overlay-config__field label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.03em; color: var(--muted); }
+.overlay-config__field input[type="text"],
+.overlay-config__field input[type="number"] { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 0.8rem; outline: none; transition: border-color 0.15s; }
+.overlay-config__field input[type="text"]:focus,
+.overlay-config__field input[type="number"]:focus { border-color: var(--brand); }
+.overlay-config__field input[type="range"] { width: 100%; height: 4px; border-radius: 2px; appearance: none; background: var(--border); outline: none; cursor: pointer; }
+.overlay-config__field input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--brand); cursor: pointer; box-shadow: 0 1px 3px rgba(91,68,255,0.3); }
+.overlay-config__field input[type="color"] { width: 100%; height: 32px; border: 1px solid var(--border); border-radius: 6px; padding: 2px; cursor: pointer; background: var(--surface); }
+.overlay-config__field input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+.overlay-config__field input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
+.overlay-config__field input[type="file"] { width: 100%; padding: 6px; border: 1px dashed var(--border); border-radius: 8px; background: var(--surface-strong); font-size: 0.75rem; color: var(--muted); cursor: pointer; }
+.overlay-config__field input[type="file"]:hover { border-color: var(--brand); }
