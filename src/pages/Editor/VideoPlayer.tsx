@@ -64,8 +64,10 @@ export function VideoPlayer() {
 
   useEffect(() => { const v = videoRef.current; if (!v) return; v.addEventListener("loadedmetadata", updateBounds); window.addEventListener("resize", updateBounds); return () => { v.removeEventListener("loadedmetadata", updateBounds); window.removeEventListener("resize", updateBounds); }; }, [updateBounds]);
   useEffect(() => { updateBounds(); }, [updateBounds]);
-  // Bug fix: Recalculate bounds on fullscreen change
-  useEffect(() => { const handler = () => { setTimeout(updateBounds, 50); }; document.addEventListener("fullscreenchange", handler); return () => document.removeEventListener("fullscreenchange", handler); }, [updateBounds]);
+  // Recalculate bounds on fullscreen change — multiple passes to catch layout settling
+  useEffect(() => { const handler = () => { updateBounds(); setTimeout(updateBounds, 100); setTimeout(updateBounds, 300); }; document.addEventListener("fullscreenchange", handler); return () => document.removeEventListener("fullscreenchange", handler); }, [updateBounds]);
+  // ResizeObserver for reliable bounds updates when container size changes
+  useEffect(() => { const container = boundsRef.current?.parentElement; if (!container) return; const ro = new ResizeObserver(() => { updateBounds(); }); ro.observe(container); return () => ro.disconnect(); }, [updateBounds]);
   // Mirror effect: canvas-based frame sampling with vertical flip
   useEffect(() => {
     const v = videoRef.current;
@@ -115,7 +117,17 @@ export function VideoPlayer() {
   const seek = useCallback((e: React.MouseEvent<HTMLDivElement>) => { const r = e.currentTarget.getBoundingClientRect(); const t = Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*duration; seekTo(t); if(videoRef.current) videoRef.current.currentTime=t; }, [duration, seekTo]);
   const toggleFS = useCallback(() => { const el = boundsRef.current?.closest(".video-player"); if (!el) return; if (document.fullscreenElement) document.exitFullscreen(); else (el as HTMLElement).requestFullscreen().catch(()=>{}); }, []);
 
-  const visibleOverlays = overlayItems.filter((i) => i.enabled);
+  const visibleOverlays = overlayItems.filter((i) => {
+    if (!i.enabled) return false;
+    // Text overlays: only visible within their time range
+    if (i.type === "text") {
+      const cfg = i.config as Record<string, unknown>;
+      const startTime = (cfg.startTime as number) ?? 0;
+      const endTime = (cfg.endTime as number) ?? Infinity;
+      if (currentTime < startTime || currentTime >= endTime) return false;
+    }
+    return true;
+  });
   const scaleX = bounds.w / 1920 || 0.001;
   const scaleY = bounds.h / 1080 || 0.001;
 

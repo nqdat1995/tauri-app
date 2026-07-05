@@ -120,6 +120,24 @@ export function OverlayPanel() {
 
 // ─── Config Fields per Type ──────────────────────────────────────
 
+// Time format helpers for text overlay start/end time
+function fmtTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  const ms = Math.round((seconds % 1) * 10);
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${ms}`;
+}
+
+function parseTime(str: string): number | null {
+  // Accepts formats: "MM:SS.s", "MM:SS", "SS.s", "SS"
+  const match = str.match(/^(?:(\d+):)?(\d+)(?:\.(\d))?$/);
+  if (!match) return null;
+  const m = parseInt(match[1] || "0", 10);
+  const s = parseInt(match[2], 10);
+  const ms = parseInt(match[3] || "0", 10);
+  return m * 60 + s + ms * 0.1;
+}
+
 function OverlayConfigFields({ item, onUpdate }: { item: OverlayItem; onUpdate: (id: string, u: Partial<OverlayItem>) => void }) {
   const config = item.config as Record<string, unknown>;
 
@@ -227,6 +245,32 @@ function OverlayConfigFields({ item, onUpdate }: { item: OverlayItem; onUpdate: 
               </div>
             </>
           )}
+          <div className="overlay-config__field">
+            <label>Thời gian bắt đầu</label>
+            <input
+              type="text"
+              className="overlay-config__time-input"
+              value={fmtTime((config.startTime as number) ?? 0)}
+              onChange={(e) => {
+                const t = parseTime(e.target.value);
+                if (t !== null) updateConfig({ startTime: t });
+              }}
+              placeholder="00:00.0"
+            />
+          </div>
+          <div className="overlay-config__field">
+            <label>Thời gian kết thúc</label>
+            <input
+              type="text"
+              className="overlay-config__time-input"
+              value={fmtTime((config.endTime as number) ?? 5)}
+              onChange={(e) => {
+                const t = parseTime(e.target.value);
+                if (t !== null) updateConfig({ endTime: t });
+              }}
+              placeholder="00:05.0"
+            />
+          </div>
         </div>
       );
     case "logo":

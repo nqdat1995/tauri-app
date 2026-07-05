@@ -39,7 +39,7 @@ function getDefaultConfig(type: OverlayType): OverlayConfig {
     case "mirror":
       return { rotate180: false };
     case "text":
-      return { text: "Văn bản", fontFamily: "system-ui", fontSize: 18, color: "#ffffff", bgColor: "#000000", bgShape: "rounded", bgOpacity: 70 };
+      return { text: "Văn bản", fontFamily: "system-ui", fontSize: 18, color: "#ffffff", bgColor: "#000000", bgShape: "rounded", bgOpacity: 70, startTime: 0, endTime: 5 };
     case "logo":
       return { path: "", opacity: 100 };
     case "watermark":
@@ -270,18 +270,27 @@ export const useEditorStore = create<EditorState & EditorActions>((set, get) => 
   // ─── Overlay ────────────────────────────────────────────────
 
   addOverlay: (type: OverlayType) => {
-    const { overlays } = get();
+    const { overlays, currentTime, project } = get();
     const typeCount = overlays.items.filter((item) => item.type === type).length;
 
     if (typeCount >= (overlays.maxInstancesPerType || MAX_OVERLAY_INSTANCES)) {
       return; // Limit reached
     }
 
+    const duration = project?.duration ?? 60;
+    let config = getDefaultConfig(type);
+    // For text overlays, set startTime to current video time
+    if (type === "text") {
+      const startTime = currentTime;
+      const endTime = Math.min(startTime + 5, duration);
+      config = { ...config, startTime, endTime };
+    }
+
     const newItem: OverlayItem = {
       id: generateId(),
       type,
       enabled: true,
-      config: getDefaultConfig(type),
+      config,
       position: { x: (1920 - getDefaultSize(type).width) / 2, y: (1080 - getDefaultSize(type).height) / 2 },
       size: getDefaultSize(type),
     };

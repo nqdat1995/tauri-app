@@ -77,6 +77,8 @@ export interface TextOverlayConfig {
   bgColor: string;
   bgShape: "none" | "rounded" | "box";
   bgOpacity: number;
+  startTime: number;
+  endTime: number;
   [key: string]: unknown;
 }
 

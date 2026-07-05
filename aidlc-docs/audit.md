@@ -761,3 +761,25 @@ Root Cause Analysis:
 - `src/pages/Editor/editor.css` — `.overlay-config__select` styles
 
 ---
+
+## Enhancement — Text Overlay Start/End Time
+**Timestamp**: 2026-07-05T08:00:00Z
+**User Input**: Overlay Chữ bổ sung startTime/endTime tương tự subtitle. Hiển thị đúng khoảng thời gian. Default startTime = thời điểm hiện tại, endTime = start+5s (không vượt duration).
+**Build Status**: SUCCESS (tsc --noEmit PASSED, 0 errors)
+**Context**: CONSTRUCTION - Enhancement.
+
+**Implementation:**
+- `TextOverlayConfig`: thêm `startTime: number`, `endTime: number`
+- `getDefaultConfig("text")`: default startTime=0, endTime=5
+- `addOverlay`: khi type="text", set `startTime = currentTime`, `endTime = Math.min(currentTime+5, duration)`
+- Config panel: 2 text inputs format "MM:SS.s" với `fmtTime`/`parseTime` helpers
+- VideoPlayer rendering: text overlays chỉ visible khi `currentTime >= startTime && currentTime < endTime`
+
+**Files Modified** (4 files):
+- `src/pages/Editor/types.ts` — TextOverlayConfig: +startTime, +endTime
+- `src/pages/Editor/store.ts` — Default config + addOverlay time logic
+- `src/pages/Editor/OverlayPanel.tsx` — Time inputs + format helpers
+- `src/pages/Editor/VideoPlayer.tsx` — Time-based visibility filter
+- `src/pages/Editor/editor.css` — .overlay-config__time-input style
+
+---
