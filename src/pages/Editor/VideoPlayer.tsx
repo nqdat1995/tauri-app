@@ -113,20 +113,24 @@ export function VideoPlayer() {
   const skipPrev = useCallback(() => { const t = Math.max(0, currentTime-3); seekTo(t); if(videoRef.current) videoRef.current.currentTime=t; }, [currentTime, seekTo]);
   const skipNext = useCallback(() => { const t = Math.min(duration, currentTime+3); seekTo(t); if(videoRef.current) videoRef.current.currentTime=t; }, [currentTime, duration, seekTo]);
   const seek = useCallback((e: React.MouseEvent<HTMLDivElement>) => { const r = e.currentTarget.getBoundingClientRect(); const t = Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*duration; seekTo(t); if(videoRef.current) videoRef.current.currentTime=t; }, [duration, seekTo]);
-  const toggleFS = useCallback(() => { const el = boundsRef.current?.parentElement; if (!el) return; if (document.fullscreenElement) document.exitFullscreen(); else el.requestFullscreen().catch(()=>{}); }, []);
+  const toggleFS = useCallback(() => { const el = boundsRef.current?.closest(".video-player"); if (!el) return; if (document.fullscreenElement) document.exitFullscreen(); else (el as HTMLElement).requestFullscreen().catch(()=>{}); }, []);
 
   const visibleOverlays = overlayItems.filter((i) => i.enabled);
   const scaleX = bounds.w / 1920 || 0.001;
   const scaleY = bounds.h / 1080 || 0.001;
 
+  const subScale = bounds.w / 1920 || 0.5;
+  const scaledSubFontSize = Math.max(12, Math.round(activeStyle.fontSize * subScale * 2.5));
+
   const subStyle: React.CSSProperties = activeCue ? {
-    fontFamily: activeStyle.fontFamily, fontSize: `${Math.max(12, activeStyle.fontSize * Math.max(scaleX, scaleY))}px`, color: activeStyle.textColor,
+    fontFamily: activeStyle.fontFamily, fontSize: `${scaledSubFontSize}px`, color: activeStyle.textColor,
     backgroundColor: activeStyle.bgShape!=="none" ? `${activeStyle.bgColor}${Math.round((activeStyle.bgOpacity/100)*255).toString(16).padStart(2,"0")}` : "transparent",
     borderRadius: activeStyle.bgShape==="rounded"?"6px":activeStyle.bgShape==="box"?"3px":"0",
     padding: activeStyle.bgShape!=="none"?"4px 14px":"4px",
     textShadow: activeStyle.bgShape==="none"?"0 1px 3px rgba(0,0,0,0.8)":"none",
     maxWidth:"100%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600, pointerEvents:"none", userSelect:"none",
   } : {};
+  const subHeight = Math.max(30, scaledSubFontSize + 16);
 
   return (
     <div className="video-player">
@@ -153,7 +157,7 @@ export function VideoPlayer() {
             let visual: React.ReactNode;
             if(item.type==="background_overlay") visual=<div className="ob-fill" style={{backgroundColor:`${cfg.color??"#000"}${Math.round(((cfg.opacity as number??50)/100)*255).toString(16).padStart(2,"0")}`}}/>;
             else if(item.type==="blur") visual=<div className="ob-fill" style={{backdropFilter:`blur(${(cfg.opacity as number??30)/10}px)`,WebkitBackdropFilter:`blur(${(cfg.opacity as number??30)/10}px)`,backgroundColor:`${cfg.color??"#000"}22`}}/>;
-            else if(item.type==="mirror") visual=<div className="ob-fill ob-mirror" style={{overflow:"hidden"}}><canvas ref={(el)=>{if(el){el.width=Math.round(w);el.height=Math.round(h);mirrorCanvasRefs.current.set(item.id,{canvas:el,item:{x:item.position.x,y:item.position.y,w:item.size.width,h:item.size.height,rotate180:!!(cfg.rotate180)}});}else{mirrorCanvasRefs.current.delete(item.id);}}} style={{width:"100%",height:"100%",display:"block",opacity:0.85}} /></div>;
+            else if(item.type==="mirror") visual=<div className="ob-fill ob-mirror" style={{overflow:"hidden"}}><canvas ref={(el)=>{if(el){el.width=Math.round(w);el.height=Math.round(h);mirrorCanvasRefs.current.set(item.id,{canvas:el,item:{x:item.position.x,y:item.position.y,w:item.size.width,h:item.size.height,rotate180:!!(cfg.rotate180)}});}else{mirrorCanvasRefs.current.delete(item.id);}}} style={{width:"100%",height:"100%",display:"block"}} /></div>;
             else if(isText) visual=<div className="ob-text" style={{fontSize:`${Math.max(12,(cfg.fontSize as number??18)*Math.max(scaleX,scaleY)*1.8)}px`,color:(cfg.color as string)??"#fff",padding:"4px 10px"}}>{(cfg.text as string)||"Văn bản"}</div>;
             else { const p=cfg.path as string; const opacity=(cfg.opacity as number ?? 100)/100; visual=p?<img src={p} className="ob-img" style={{opacity}} alt=""/>:<div className="ob-placeholder">{ti?.icon} {ti?.label}</div>; }
 
@@ -171,8 +175,8 @@ export function VideoPlayer() {
 
           {/* Subtitle */}
           {activeCue && bounds.w > 0 && (
-            <Rnd position={subPos} size={{width:bounds.w*0.8,height:"auto"}} bounds="parent" enableResizing={false}
-              onDragStart={()=>setGuides(true)} onDragStop={(_e,d)=>{ setSubPos(snap(d.x,d.y,bounds.w*0.8,40,bounds.w,bounds.h)); setGuides(false); }}
+            <Rnd position={subPos} size={{width:bounds.w*0.8,height:subHeight}} bounds="parent" enableResizing={false}
+              onDragStart={()=>setGuides(true)} onDragStop={(_e,d)=>{ setSubPos(snap(d.x,d.y,bounds.w*0.8,subHeight,bounds.w,bounds.h)); setGuides(false); }}
               className="vp-sub-rnd">
               <div style={subStyle} className="vp-sub-text">{activeCue.translatedText}</div>
             </Rnd>

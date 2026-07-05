@@ -228,10 +228,10 @@
 .video-player__viewport:-webkit-full-screen { max-height: none; aspect-ratio: unset; }
 
 /* Logo/Watermark overlay — no extra border space, image fills container */
-.ov-item--media { border: none; background: transparent; padding: 0; overflow: visible; }
+.ov-item--media { border: none; background: transparent; padding: 0; overflow: visible; align-items: stretch; justify-content: stretch; }
 .ov-item--media:hover { border: none; box-shadow: 0 0 0 2px rgba(91,68,255,0.5); }
 .ov-item--media .ob-img { width: 100%; height: 100%; display: block; }
-.ov-item--media .ob-placeholder { border: 2px dashed rgba(91,68,255,0.4); border-radius: 6px; }
+.ov-item--media .ob-placeholder { border: 2px dashed rgba(91,68,255,0.4); border-radius: 6px; width: 100%; height: 100%; }
 .ov-item--media .ov-resize-handle { opacity: 0.5; }
 .ov-item--media:hover .ov-resize-handle { opacity: 1; }
 
@@ -244,3 +244,11 @@
 .overlay-config__switch--on { background: var(--brand); }
 .overlay-config__switch-thumb { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.2s; }
 .overlay-config__switch--on .overlay-config__switch-thumb { transform: translateX(18px); }
+
+/* Video player fullscreen — show controls at bottom */
+.video-player:fullscreen { display: flex; flex-direction: column; background: #000; }
+.video-player:fullscreen .video-player__viewport { flex: 1; max-height: none; aspect-ratio: unset; }
+.video-player:fullscreen .video-player__seekbar { background: rgba(0,0,0,0.8); }
+.video-player:fullscreen .video-player__controls { background: rgba(0,0,0,0.8); }
+.video-player:-webkit-full-screen { display: flex; flex-direction: column; background: #000; }
+.video-player:-webkit-full-screen .video-player__viewport { flex: 1; max-height: none; aspect-ratio: unset; }

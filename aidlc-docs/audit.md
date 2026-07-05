@@ -669,3 +669,50 @@ Root Cause Analysis:
 - `src/pages/Editor/editor.css` — Media overlay: no border, no object-fit, hover box-shadow
 
 ---
+
+## Bug Fix Session — Mirror Opacity, Subtitle, Logo (Round 6)
+**Timestamp**: 2026-07-05T05:00:00Z
+**User Input**: Feedback — vấn đề subtitle và logo vẫn còn nguyên, mirror bị làm mờ 1 phần.
+**Build Status**: SUCCESS (tsc --noEmit PASSED, 0 errors)
+**Context**: CONSTRUCTION - Bug Fix session.
+
+**Fixes:**
+
+**Issue 1 — Mirror bị làm mờ (opacity):**
+- Root cause: Canvas element có `style={{opacity: 0.85}}` → hiển thị semi-transparent.
+- Fix: Xóa `opacity: 0.85` khỏi canvas style. Mirror giờ hiển thị 100% rõ ràng.
+- File: `src/pages/Editor/VideoPlayer.tsx`
+
+**Issue 2 — Subtitle không hiển thị đúng khi fullscreen:**
+- Root cause: 1) fontSize scale formula `fontSize * Math.max(scaleX, scaleY)` quá nhỏ (14 * 0.5 = 7, clamped 12). 2) Rnd height dùng `"auto"` — react-rnd không hỗ trợ string height đúng cách, gây render sai.
+- Fix: Đổi formula sang `fontSize * subScale * 2.5` (subScale = bounds.w/1920). Tính `subHeight = scaledFontSize + 16` (số cụ thể). Rnd height dùng number `subHeight` thay vì "auto". Subtitle giờ scale proportional khi bounds thay đổi (fullscreen hoặc resize).
+- File: `src/pages/Editor/VideoPlayer.tsx`
+
+**Issue 3 — Logo vẫn bị thừa space:**
+- Root cause: Base `.ov-item` class có `display:flex; align-items:center; justify-content:center`. Flex centering khiến child img không stretch đầy 100% height trong container.
+- Fix: Override `.ov-item--media` với `align-items: stretch; justify-content: stretch`. Image giờ fill 100% cả width lẫn height của container.
+- File: `src/pages/Editor/editor.css`
+
+**Files Modified** (2 files):
+- `src/pages/Editor/VideoPlayer.tsx` — Mirror: xóa opacity 0.85. Subtitle: new scale formula + numeric height.
+- `src/pages/Editor/editor.css` — Media overlay: align-items/justify-content stretch.
+
+---
+
+## Bug Fix — Fullscreen Video Controls Missing
+**Timestamp**: 2026-07-05T05:30:00Z
+**User Input**: Khi mở full video, các button thao tác video và thời lượng không còn hiển thị. Cần hiển thị đầy đủ.
+**Build Status**: SUCCESS (tsc --noEmit PASSED, 0 errors)
+**Context**: CONSTRUCTION - Bug Fix.
+
+**Root Cause:** `toggleFS` fullscreen `.video-player__viewport` (parent of boundsRef). Seekbar và controls nằm ngoài viewport → bị ẩn khi viewport fullscreen.
+
+**Fix:**
+- Đổi `toggleFS` target sang `.video-player` (ancestor container) bằng `boundsRef.current?.closest(".video-player")`. Giờ cả viewport + seekbar + controls đều nằm trong fullscreen element.
+- Thêm CSS `.video-player:fullscreen`: `display:flex; flex-direction:column; background:#000`. Viewport `flex:1; max-height:none; aspect-ratio:unset`. Controls/seekbar giữ nguyên ở bottom với background semi-transparent.
+
+**Files Modified** (2 files):
+- `src/pages/Editor/VideoPlayer.tsx` — toggleFS target: `.closest(".video-player")`
+- `src/pages/Editor/editor.css` — Fullscreen layout CSS cho .video-player
+
+---
