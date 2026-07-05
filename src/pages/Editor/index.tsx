@@ -103,8 +103,9 @@ export function Editor({ projectId, onNavigateToHistory }: EditorProps) {
 
       {/* Right panel */}
       <div className="editor-right-panel">
-        <StylePanel activeTab={rightPanelTab} onTabChange={setRightPanelTab} />
-        {rightPanelTab === "overlay" && <OverlayPanel />}
+        <StylePanel activeTab={rightPanelTab} onTabChange={setRightPanelTab}>
+          <OverlayPanel />
+        </StylePanel>
       </div>
     </div>
   );

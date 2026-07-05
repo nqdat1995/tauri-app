@@ -24,9 +24,10 @@ type PanelTab = "style" | "overlay";
 interface StylePanelProps {
   onTabChange: (tab: PanelTab) => void;
   activeTab: PanelTab;
+  children?: React.ReactNode;
 }
 
-export function StylePanel({ onTabChange, activeTab }: StylePanelProps) {
+export function StylePanel({ onTabChange, activeTab, children }: StylePanelProps) {
   const activeStyle = useEditorStore((s) => s.activeStyle);
   const updateStyle = useEditorStore((s) => s.updateStyle);
   const selectPreset = useEditorStore((s) => s.selectPreset);
@@ -181,6 +182,12 @@ export function StylePanel({ onTabChange, activeTab }: StylePanelProps) {
               />
             </div>
           </div>
+        </div>
+      )}
+
+      {activeTab === "overlay" && children && (
+        <div className="style-panel__content">
+          {children}
         </div>
       )}
     </aside>

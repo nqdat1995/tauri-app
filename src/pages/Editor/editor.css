@@ -43,13 +43,18 @@
 
 /* Video Player */
 .video-player { position: relative; background: #0f0f0f; }
-.video-player__viewport { position: relative; width: 100%; aspect-ratio: 16/9; max-height: 380px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #1a1a2e; cursor: pointer; }
+.video-player__viewport { position: relative; width: 100%; aspect-ratio: 16/9; max-height: 650px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #1a1a2e; }
 .video-player__video { width: 100%; height: 100%; object-fit: contain; }
 .video-player__placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
 .video-player__placeholder-icon { font-size: 44px; opacity: 0.4; color: #fff; }
-.video-player__subtitle { position: absolute; text-align: center; font-weight: 600; max-width: 85%; z-index: 2; pointer-events: none; white-space: pre-wrap; }
+.video-player__subtitle { position: absolute; text-align: center; font-weight: 600; max-width: 85%; z-index: 2; pointer-events: none; white-space: pre-wrap; overflow: hidden; text-overflow: ellipsis; }
 .video-player__subtitle--bottom { bottom: 10%; left: 50%; transform: translateX(-50%); }
 .video-player__subtitle--top { top: 10%; left: 50%; transform: translateX(-50%); }
+
+/* Draggable subtitle via react-rnd */
+.video-player__subtitle-rnd { z-index: 5 !important; cursor: grab !important; position: absolute !important; bottom: 10% !important; left: 50% !important; transform: translateX(-50%); pointer-events: auto !important; }
+.video-player__subtitle-rnd:active { cursor: grabbing !important; }
+.video-player__subtitle-inner { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; pointer-events: none; user-select: none; }
 .video-player__seekbar { padding: 6px 14px; cursor: pointer; background: #0f0f0f; }
 .video-player__seekbar-track { position: relative; height: 4px; background: rgba(255,255,255,0.18); border-radius: 2px; }
 .video-player__seekbar-fill { position: absolute; top: 0; left: 0; height: 100%; background: #3b82f6; border-radius: 2px; transition: width 0.1s linear; }
@@ -78,7 +83,7 @@
 .subtitle-table__row:hover { background: rgba(91,68,255,0.03); }
 .subtitle-table__row--active { background: rgba(91,68,255,0.06); border-left: 3px solid var(--brand); }
 .subtitle-table__col { display: flex; align-items: flex-start; }
-.subtitle-table__col--time { width: 100px; flex: 0 0 100px; }
+.subtitle-table__col--time { width: 120px; flex: 0 0 120px; }
 .subtitle-table__col--original { flex: 1; padding-right: 12px; }
 .subtitle-table__col--translated { flex: 1; padding-right: 12px; }
 .subtitle-table__col--actions { width: 36px; flex: 0 0 36px; justify-content: center; }
@@ -145,13 +150,18 @@
 
 /* Overlay Viewport (react-rnd items) */
 .overlay-viewport { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
-.overlay-viewport__item { border: 2px dashed rgba(91,68,255,0.6); background: rgba(91,68,255,0.08); border-radius: 4px; pointer-events: auto; display: flex; align-items: center; justify-content: center; }
+.overlay-viewport__item { border: 2px dashed rgba(91,68,255,0.6); background: rgba(91,68,255,0.08); border-radius: 4px; pointer-events: auto; display: flex; align-items: center; justify-content: center; cursor: move; }
 .overlay-viewport__item-label { font-size: 0.7rem; color: rgba(91,68,255,0.9); font-weight: 600; white-space: nowrap; pointer-events: none; }
+.overlay-viewport__fullscreen { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+
+/* Draggable subtitle on video */
+.video-player__subtitle-rnd { z-index: 5 !important; cursor: move !important; pointer-events: auto !important; display: flex !important; align-items: center; justify-content: center; }
+.video-player__subtitle-text { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 
 /* Subtitle time inputs */
 .subtitle-table__time-group { display: flex; flex-direction: column; gap: 2px; }
-.subtitle-table__time-input { width: 80px; padding: 3px 5px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.72rem; font-variant-numeric: tabular-nums; color: var(--muted); background: var(--surface); outline: none; }
+.subtitle-table__time-input { width: 100px; padding: 3px 5px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.72rem; font-variant-numeric: tabular-nums; color: var(--muted); background: var(--surface); outline: none; }
 .subtitle-table__time-input:focus { border-color: var(--brand); color: var(--text); }
 
 /* Subtitle textarea */
