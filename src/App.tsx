@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { applyTheme } from "./config/ui";
 import { Sidebar, TabKey } from "./components/Sidebar";
 import { Home } from "./pages/Home";
@@ -17,9 +16,6 @@ export default function App() {
 
   useEffect(() => {
     try { applyTheme(); } catch { /* no-op */ }
-    const window = getCurrentWindow();
-    window.maximize().catch(() => {});
-    window.setFullscreen(true).catch(() => {});
   }, []);
 
   // Navigation with unsaved changes protection

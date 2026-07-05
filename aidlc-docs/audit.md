@@ -519,3 +519,44 @@ Root Cause Analysis:
 - `src/pages/Editor/editor.css` — File button styles, mirror video styles, fullscreen viewport fix
 
 ---
+
+## Bug Fix Session — Additional Issues (Post Phase 1)
+**Timestamp**: 2026-07-05T01:00:00Z
+**User Input**: Feedback on 4 remaining issues:
+1. Text overlay: khi thay đổi Cỡ chữ, kích thước cần tự động thay đổi theo và không vượt quá phạm vi video
+2. Mirror effect chưa đúng: cần sample vùng video frame, flip dọc, render overlay (dùng để che subtitle hardcode)
+3. Lần đầu mở app, bấm ESC từ fullscreen → window shrink về minimal size. App chỉ nên có 2 trạng thái: Maximize và Minimize
+4. Không có thanh công cụ Maximize/Minimize/Close khi mở app
+**AI Response**: Phân tích root cause cho 4 issues. Thực hiện fix toàn bộ. Build PASSED (cargo check + tsc --noEmit, 0 errors).
+**Build Status**: SUCCESS (cargo check PASSED, tsc --noEmit PASSED, 0 errors)
+**Context**: CONSTRUCTION - Bug Fix session. All 4 issues resolved.
+
+**Root Cause Analysis & Fixes:**
+
+**Issue 1 — Text overlay auto-resize on fontSize change:**
+- Root cause: `updateOverlay` chỉ merge updates đơn giản, không tính toán lại kích thước khi `config.fontSize` hoặc `config.text` thay đổi. Text overlay có `enableResizing: false` nên user không thể tự resize.
+- Fix: Thêm logic auto-resize trong `updateOverlay` khi overlay type=text và updates.config thay đổi. Formula: `width = charCount * fontSize * 0.62 + 40` (clamp 100–1800), `height = fontSize * 2.2` (min 40). Clamp position để không vượt quá 1920×1080.
+- File: `src/pages/Editor/store.ts`
+
+**Issue 2 — Mirror effect sai cách hoạt động:**
+- Root cause: Mirror overlay trước đó dùng secondary `<video>` element với `scaleY(-1)` — chỉ flip toàn bộ video, không phải behavior đúng. Đúng: "sample rectangular region from current video frame, mirror vertically, render on top of another region" (che subtitle hardcode).
+- Fix: Thay thế `<video>` element bằng `<canvas>` + `requestAnimationFrame` loop. Canvas liên tục draw từ main video tại vị trí tương ứng với overlay position (1920×1080 → video native resolution mapping), flip dọc bằng `ctx.translate(0, ch) + ctx.scale(1, -1)`. Position data cập nhật tự động khi drag/resize qua React re-render cycle.
+- File: `src/pages/Editor/VideoPlayer.tsx`
+
+**Issue 3 — Fullscreen ESC → window shrink:**
+- Root cause: `tauri.conf.json` có `fullscreen: true` + App.tsx gọi `window.setFullscreen(true)` on mount. Khi user bấm ESC, OS exit fullscreen và window trở về kích thước mặc định (800×600). Không có handler để restore về maximized state.
+- Fix: Đổi config sang `fullscreen: false`, `maximized: true`, `resizable: false`. Xóa `window.setFullscreen(true)` và `window.maximize()` khỏi App.tsx. App giờ chỉ có 2 state: Maximize (default) và Minimize (via OS titlebar button).
+- Files: `src-tauri/tauri.conf.json`, `src/App.tsx`
+
+**Issue 4 — Không có thanh công cụ Maximize/Minimize/Close:**
+- Root cause: `fullscreen: true` khiến OS ẩn window decorations (title bar) trên hầu hết các platform. Config không có `decorations: true` explicit.
+- Fix: Set `decorations: true` + `fullscreen: false` trong tauri.conf.json. OS title bar với đầy đủ Maximize/Minimize/Close buttons giờ hiển thị bình thường.
+- File: `src-tauri/tauri.conf.json`
+
+**Files Modified** (4 files):
+- `src-tauri/tauri.conf.json` — fullscreen:false, maximized:true, resizable:false, decorations:true
+- `src/App.tsx` — Xóa programmatic setFullscreen/maximize, xóa unused getCurrentWindow import
+- `src/pages/Editor/VideoPlayer.tsx` — Canvas-based mirror effect thay thế video element
+- `src/pages/Editor/store.ts` — Text overlay auto-resize logic trong updateOverlay
+
+---

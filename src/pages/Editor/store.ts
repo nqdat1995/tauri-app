@@ -309,9 +309,29 @@ export const useEditorStore = create<EditorState & EditorActions>((set, get) => 
     set((state) => ({
       overlays: {
         ...state.overlays,
-        items: state.overlays.items.map((item) =>
-          item.id === id ? { ...item, ...updates } : item
-        ),
+        items: state.overlays.items.map((item) => {
+          if (item.id !== id) return item;
+          const merged = { ...item, ...updates };
+          // Auto-resize text overlays when fontSize or text content changes
+          if (merged.type === "text" && updates.config) {
+            const cfg = merged.config as { text?: string; fontSize?: number };
+            const fontSize = cfg.fontSize ?? 18;
+            const text = cfg.text || "Văn bản";
+            // Estimate width: ~0.6em per character, height: fontSize + padding
+            const charWidth = fontSize * 0.62;
+            const estimatedWidth = Math.max(100, Math.min(1800, text.length * charWidth + 40));
+            const estimatedHeight = Math.max(40, fontSize * 2.2);
+            merged.size = { width: Math.round(estimatedWidth), height: Math.round(estimatedHeight) };
+            // Clamp position so overlay stays within 1920x1080 bounds
+            const maxX = 1920 - merged.size.width;
+            const maxY = 1080 - merged.size.height;
+            merged.position = {
+              x: Math.max(0, Math.min(merged.position.x, maxX)),
+              y: Math.max(0, Math.min(merged.position.y, maxY)),
+            };
+          }
+          return merged;
+        }),
       },
       isDirty: true,
     }));
