@@ -637,3 +637,35 @@ Root Cause Analysis:
 - `src/pages/Editor/editor.css` — Logo: object-fit:contain. Toggle switch styles thay toggle button
 
 ---
+
+## Bug Fix Session — Mirror Logic, Subtitle Scale, Logo Fit (Round 5)
+**Timestamp**: 2026-07-05T04:00:00Z
+**User Input**: Feedback:
+1. Mirror: Chưa hiển thị đúng logic — vùng chọn cần hiển thị phần video ngay phía trên vùng chọn, bằng kích thước vùng chọn
+2. Khi mở full màn hình phụ đề chưa hiển thị chính xác vị trí và chưa scale kích thước phù hợp
+3. Logo bị thừa phần trên/dưới (ngang) hoặc trái/phải (dọc) — object-fit:contain để trống space
+**Build Status**: SUCCESS (cargo check PASSED, tsc --noEmit PASSED, 0 errors)
+**Context**: CONSTRUCTION - Bug Fix session.
+
+**Root Cause Analysis & Fixes:**
+
+**Issue 1 — Mirror logic sai vùng sampling:**
+- Root cause: Canvas draw lấy `srcY = pos.y` (cùng vị trí với overlay). Đúng phải lấy vùng video phía TRÊN overlay: `srcY = pos.y - pos.h` (vị trí y trừ đi chiều cao của overlay).
+- Fix: `srcY = Math.max(0, (pos.y / 1080) * videoHeight - (pos.h / 1080) * videoHeight)`. Clamped ở 0 để không vượt quá top edge.
+- File: `src/pages/Editor/VideoPlayer.tsx`
+
+**Issue 2 — Phụ đề không scale khi fullscreen:**
+- Root cause: `subStyle.fontSize` dùng `activeStyle.fontSize` trực tiếp (px cố định, vd 14px). Khi viewport thay đổi (fullscreen), fontSize không scale theo. Rnd height cũng fixed ở 50px.
+- Fix: fontSize giờ scale theo viewport: `Math.max(12, fontSize * Math.max(scaleX, scaleY))`. Rnd height đổi sang `"auto"` để tự co theo content. Di chuyển `scaleX`/`scaleY` lên trước `subStyle` computation.
+- File: `src/pages/Editor/VideoPlayer.tsx`
+
+**Issue 3 — Logo bị thừa space:**
+- Root cause: `.ob-img` dùng `object-fit: contain` — khi container aspect ratio khác image aspect ratio (do rounding hoặc default 200×100), image không fill hết → empty space hiển thị.
+- Fix: Bỏ `object-fit` property hoàn toàn → image stretch fill 100% width/height. Vì Rnd container đã có `lockAspectRatio=true` và size được set từ `img.onload` (tính aspect ratio chính xác), image sẽ không bị méo. Bỏ border trên `.ov-item--media`, chỉ dùng box-shadow khi hover.
+- File: `src/pages/Editor/editor.css`
+
+**Files Modified** (2 files):
+- `src/pages/Editor/VideoPlayer.tsx` — Mirror srcY sampling from above, subtitle fontSize scale, subtitle Rnd height auto, move scaleX/Y up
+- `src/pages/Editor/editor.css` — Media overlay: no border, no object-fit, hover box-shadow
+
+---

@@ -79,7 +79,7 @@ export function VideoPlayer() {
         if (!ctx) return;
         const cw = canvas.width, ch = canvas.height;
         const srcX = (pos.x / 1920) * v.videoWidth;
-        const srcY = (pos.y / 1080) * v.videoHeight;
+        const srcY = Math.max(0, (pos.y / 1080) * v.videoHeight - (pos.h / 1080) * v.videoHeight);
         const srcW = (pos.w / 1920) * v.videoWidth;
         const srcH = (pos.h / 1080) * v.videoHeight;
         ctx.save();
@@ -115,18 +115,18 @@ export function VideoPlayer() {
   const seek = useCallback((e: React.MouseEvent<HTMLDivElement>) => { const r = e.currentTarget.getBoundingClientRect(); const t = Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*duration; seekTo(t); if(videoRef.current) videoRef.current.currentTime=t; }, [duration, seekTo]);
   const toggleFS = useCallback(() => { const el = boundsRef.current?.parentElement; if (!el) return; if (document.fullscreenElement) document.exitFullscreen(); else el.requestFullscreen().catch(()=>{}); }, []);
 
+  const visibleOverlays = overlayItems.filter((i) => i.enabled);
+  const scaleX = bounds.w / 1920 || 0.001;
+  const scaleY = bounds.h / 1080 || 0.001;
+
   const subStyle: React.CSSProperties = activeCue ? {
-    fontFamily: activeStyle.fontFamily, fontSize: `${activeStyle.fontSize}px`, color: activeStyle.textColor,
+    fontFamily: activeStyle.fontFamily, fontSize: `${Math.max(12, activeStyle.fontSize * Math.max(scaleX, scaleY))}px`, color: activeStyle.textColor,
     backgroundColor: activeStyle.bgShape!=="none" ? `${activeStyle.bgColor}${Math.round((activeStyle.bgOpacity/100)*255).toString(16).padStart(2,"0")}` : "transparent",
     borderRadius: activeStyle.bgShape==="rounded"?"6px":activeStyle.bgShape==="box"?"3px":"0",
     padding: activeStyle.bgShape!=="none"?"4px 14px":"4px",
     textShadow: activeStyle.bgShape==="none"?"0 1px 3px rgba(0,0,0,0.8)":"none",
     maxWidth:"100%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600, pointerEvents:"none", userSelect:"none",
   } : {};
-
-  const visibleOverlays = overlayItems.filter((i) => i.enabled);
-  const scaleX = bounds.w / 1920 || 0.001;
-  const scaleY = bounds.h / 1080 || 0.001;
 
   return (
     <div className="video-player">
@@ -171,8 +171,8 @@ export function VideoPlayer() {
 
           {/* Subtitle */}
           {activeCue && bounds.w > 0 && (
-            <Rnd position={subPos} size={{width:bounds.w*0.8,height:50}} bounds="parent" enableResizing={false}
-              onDragStart={()=>setGuides(true)} onDragStop={(_e,d)=>{ setSubPos(snap(d.x,d.y,bounds.w*0.8,50,bounds.w,bounds.h)); setGuides(false); }}
+            <Rnd position={subPos} size={{width:bounds.w*0.8,height:"auto"}} bounds="parent" enableResizing={false}
+              onDragStart={()=>setGuides(true)} onDragStop={(_e,d)=>{ setSubPos(snap(d.x,d.y,bounds.w*0.8,40,bounds.w,bounds.h)); setGuides(false); }}
               className="vp-sub-rnd">
               <div style={subStyle} className="vp-sub-text">{activeCue.translatedText}</div>
             </Rnd>

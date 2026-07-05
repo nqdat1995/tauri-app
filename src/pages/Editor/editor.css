@@ -227,9 +227,11 @@
 .video-player__viewport:fullscreen { max-height: none; aspect-ratio: unset; }
 .video-player__viewport:-webkit-full-screen { max-height: none; aspect-ratio: unset; }
 
-/* Logo/Watermark overlay — tight border around image */
-.ov-item--media { border: 1px solid rgba(91,68,255,0.3); background: transparent; padding: 0; }
-.ov-item--media .ob-img { width: 100%; height: 100%; object-fit: contain; border-radius: 4px; }
+/* Logo/Watermark overlay — no extra border space, image fills container */
+.ov-item--media { border: none; background: transparent; padding: 0; overflow: visible; }
+.ov-item--media:hover { border: none; box-shadow: 0 0 0 2px rgba(91,68,255,0.5); }
+.ov-item--media .ob-img { width: 100%; height: 100%; display: block; }
+.ov-item--media .ob-placeholder { border: 2px dashed rgba(91,68,255,0.4); border-radius: 6px; }
 .ov-item--media .ov-resize-handle { opacity: 0.5; }
 .ov-item--media:hover .ov-resize-handle { opacity: 1; }
 
