@@ -211,3 +211,18 @@
 .overlay-config__field input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
 .overlay-config__field input[type="file"] { width: 100%; padding: 6px; border: 1px dashed var(--border); border-radius: 8px; background: var(--surface-strong); font-size: 0.75rem; color: var(--muted); cursor: pointer; }
 .overlay-config__field input[type="file"]:hover { border-color: var(--brand); }
+
+/* Logo/Watermark file upload — styled button */
+.overlay-config__file-wrapper { display: flex; flex-direction: column; gap: 8px; }
+.overlay-config__file-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1.5px solid var(--brand); border-radius: 8px; background: var(--brand-soft); color: var(--brand); font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.18s; width: 100%; justify-content: center; }
+.overlay-config__file-btn:hover { background: var(--brand); color: #fff; box-shadow: 0 4px 12px rgba(91,68,255,0.18); }
+.overlay-config__file-btn svg { flex-shrink: 0; }
+.overlay-config__file-preview { display: flex; align-items: center; justify-content: center; padding: 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-strong); }
+.overlay-config__file-thumb { max-width: 100%; max-height: 80px; object-fit: contain; border-radius: 4px; }
+
+/* Mirror overlay video */
+.ob-mirror-video { pointer-events: none; -webkit-user-drag: none; user-select: none; }
+
+/* Fullscreen viewport fix */
+.video-player__viewport:fullscreen { max-height: none; aspect-ratio: unset; }
+.video-player__viewport:-webkit-full-screen { max-height: none; aspect-ratio: unset; }

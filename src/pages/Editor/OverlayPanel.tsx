@@ -190,19 +190,49 @@ function OverlayConfigFields({ item, onUpdate }: { item: OverlayItem; onUpdate: 
     case "watermark":
       return (
         <div className="overlay-panel__config-fields">
-          <div className="overlay-config__field">
+          <div className="overlay-config__field overlay-config__field--file">
             <label>Chọn hình ảnh</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  const url = URL.createObjectURL(file);
-                  updateConfig({ path: url });
-                }
-              }}
-            />
+            <div className="overlay-config__file-wrapper">
+              <button
+                type="button"
+                className="overlay-config__file-btn"
+                onClick={() => {
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.accept = "image/*";
+                  input.onchange = () => {
+                    const file = input.files?.[0];
+                    if (file) {
+                      const url = URL.createObjectURL(file);
+                      // Load image to get natural dimensions and adjust aspect ratio
+                      const img = new Image();
+                      img.onload = () => {
+                        const aspect = img.naturalWidth / img.naturalHeight;
+                        const currentWidth = item.size.width;
+                        const newHeight = Math.round(currentWidth / aspect);
+                        onUpdate(item.id, {
+                          config: { ...config, path: url },
+                          size: { width: currentWidth, height: newHeight },
+                        });
+                      };
+                      img.onerror = () => {
+                        updateConfig({ path: url });
+                      };
+                      img.src = url;
+                    }
+                  };
+                  input.click();
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                {(config.path as string) ? "Đổi hình ảnh" : "Tải lên hình ảnh"}
+              </button>
+              {(config.path as string) && (
+                <div className="overlay-config__file-preview">
+                  <img src={config.path as string} alt="Preview" className="overlay-config__file-thumb" />
+                </div>
+              )}
+            </div>
           </div>
           <div className="overlay-config__field">
             <label>Độ rõ: {(config.opacity as number) ?? 100}%</label>

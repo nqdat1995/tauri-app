@@ -465,3 +465,57 @@ Root Cause Analysis:
 **Context**: CONSTRUCTION - Build and Test complete. Video Editor Phase 1 lifecycle DONE.
 
 ---
+
+## Bug Fix Session — Pending Issues
+**Timestamp**: 2026-07-04T13:00:00Z
+**User Input**: Feedback on remaining issues:
+1. Mirror effect not showing reflected video content
+2. Fullscreen mode shows edits incorrectly (bounds not recalculated)
+3. Text overlay font-size display incorrect
+4. Logo overlay: file button style basic; border doesn't match logo aspect ratio (horizontal logo in vertical border)
+5. Logo border needs to match actual image aspect ratio
+**AI Response**: Context window exhausted. Issues documented for next session.
+**Context**: CONSTRUCTION - Bug fixing phase, session continuation needed.
+
+---
+
+## Bug Fix Session — Pending Issues Resolved
+**Timestamp**: 2026-07-05T00:00:00Z
+**User Input**: "Sử dụng AI-DLC, thực hiện kiểm tra file audit.md và fix các Pending Issues ngày 2026-04-04"
+**AI Response**: Phân tích 5 pending issues từ session 2026-07-04. Xác định root cause cho từng bug. Thực hiện fix toàn bộ. Build PASSED (cargo check + tsc --noEmit, 0 errors).
+**Build Status**: SUCCESS (cargo check PASSED, tsc --noEmit PASSED, 0 errors)
+**Context**: CONSTRUCTION - Bug Fix session. All 5 pending issues from 2026-07-04 resolved.
+
+**Root Cause Analysis & Fixes:**
+
+**Bug 1 — Mirror effect not showing reflected video content:**
+- Root cause: Mirror overlay rendered a placeholder `<div>` with text "↕ Gương" instead of actual video reflection.
+- Fix: Replaced placeholder with `<video>` element using CSS `transform: scaleY(-1)` + `objectFit: cover`. Added `mirrorRefs` Set to sync time/play/pause/seek with main video via timeupdate, play, pause, seeked events.
+- File: `src/pages/Editor/VideoPlayer.tsx`
+
+**Bug 2 — Fullscreen mode shows edits incorrectly (bounds not recalculated):**
+- Root cause: `toggleFS` triggered `requestFullscreen()` but no `fullscreenchange` event listener existed to recalculate overlay bounds after viewport resize.
+- Fix: Added `fullscreenchange` event listener that calls `updateBounds()` with 50ms delay. Added CSS rule to remove `max-height`/`aspect-ratio` constraints on `:fullscreen` viewport.
+- Files: `src/pages/Editor/VideoPlayer.tsx`, `src/pages/Editor/editor.css`
+
+**Bug 3 — Text overlay font-size display incorrect:**
+- Root cause: Font was scaled as `fontSize * scaleX` where `scaleX = bounds.w / 1920`. On typical displays (~960px), this made 18px → 9px (too small).
+- Fix: Changed formula to `fontSize * Math.max(scaleX, scaleY) * 1.8` with minimum 12px. Text now displays proportionally visible at all viewport sizes.
+- File: `src/pages/Editor/VideoPlayer.tsx`
+
+**Bug 4 — Logo overlay file button style basic:**
+- Root cause: Used raw `<input type="file">` with minimal dashed-border CSS styling.
+- Fix: Replaced with styled `<button>` using programmatic file picker (`document.createElement("input")`). Added upload SVG icon, brand color scheme, hover effect (fill → white text), and image preview thumbnail after selection.
+- Files: `src/pages/Editor/OverlayPanel.tsx`, `src/pages/Editor/editor.css`
+
+**Bug 5 — Logo border doesn't match actual image aspect ratio:**
+- Root cause: Default overlay size hardcoded at 200×100 in `getDefaultSize()`. When user selected an image, container stayed at fixed dimensions regardless of image's natural aspect ratio.
+- Fix: On image load, calculate `naturalWidth / naturalHeight` aspect ratio and auto-resize overlay height to `width / aspect`. Uses `lockAspectRatio` on Rnd to maintain ratio during subsequent resizes.
+- File: `src/pages/Editor/OverlayPanel.tsx`
+
+**Files Modified** (3 files):
+- `src/pages/Editor/VideoPlayer.tsx` — Mirror video element, fullscreenchange listener, text fontSize formula
+- `src/pages/Editor/OverlayPanel.tsx` — Logo/watermark file button redesign with aspect ratio auto-adjust
+- `src/pages/Editor/editor.css` — File button styles, mirror video styles, fullscreen viewport fix
+
+---

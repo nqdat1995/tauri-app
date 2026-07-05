@@ -24,6 +24,7 @@ function snap(x: number, y: number, iw: number, ih: number, bw: number, bh: numb
 export function VideoPlayer() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const boundsRef = useRef<HTMLDivElement>(null);
+  const mirrorRefs = useRef<Set<HTMLVideoElement>>(new Set());
   const [muted, setMuted] = useState(false);
   const [bounds, setBounds] = useState({ w: 0, h: 0 });
   const [subPos, setSubPos] = useState({ x: 0, y: 0 });
@@ -62,6 +63,10 @@ export function VideoPlayer() {
 
   useEffect(() => { const v = videoRef.current; if (!v) return; v.addEventListener("loadedmetadata", updateBounds); window.addEventListener("resize", updateBounds); return () => { v.removeEventListener("loadedmetadata", updateBounds); window.removeEventListener("resize", updateBounds); }; }, [updateBounds]);
   useEffect(() => { updateBounds(); }, [updateBounds]);
+  // Bug fix: Recalculate bounds on fullscreen change
+  useEffect(() => { const handler = () => { setTimeout(updateBounds, 50); }; document.addEventListener("fullscreenchange", handler); return () => document.removeEventListener("fullscreenchange", handler); }, [updateBounds]);
+  // Sync mirror videos with main video
+  useEffect(() => { const v = videoRef.current; if (!v) return; const sync = () => { mirrorRefs.current.forEach((m) => { if (Math.abs(m.currentTime - v.currentTime) > 0.3) m.currentTime = v.currentTime; }); }; const onPlay = () => mirrorRefs.current.forEach((m) => m.play().catch(()=>{})); const onPause = () => mirrorRefs.current.forEach((m) => m.pause()); const onSeek = () => mirrorRefs.current.forEach((m) => { m.currentTime = v.currentTime; }); v.addEventListener("timeupdate", sync); v.addEventListener("play", onPlay); v.addEventListener("pause", onPause); v.addEventListener("seeked", onSeek); return () => { v.removeEventListener("timeupdate", sync); v.removeEventListener("play", onPlay); v.removeEventListener("pause", onPause); v.removeEventListener("seeked", onSeek); }; }, []);
   useEffect(() => { if (bounds.w > 0 && !subInit) { setSubPos({ x: bounds.w * 0.1, y: bounds.h * 0.82 }); setSubInit(true); } }, [bounds, subInit]);
   useEffect(() => { const v = videoRef.current; if (!v) return; const t = () => setCurrentTime(v.currentTime); const e = () => setPlaying(false); v.addEventListener("timeupdate", t); v.addEventListener("ended", e); return () => { v.removeEventListener("timeupdate", t); v.removeEventListener("ended", e); }; }, [setCurrentTime, setPlaying]);
 
@@ -106,8 +111,8 @@ export function VideoPlayer() {
             let visual: React.ReactNode;
             if(item.type==="background_overlay") visual=<div className="ob-fill" style={{backgroundColor:`${cfg.color??"#000"}${Math.round(((cfg.opacity as number??50)/100)*255).toString(16).padStart(2,"0")}`}}/>;
             else if(item.type==="blur") visual=<div className="ob-fill" style={{backdropFilter:`blur(${(cfg.opacity as number??30)/10}px)`,WebkitBackdropFilter:`blur(${(cfg.opacity as number??30)/10}px)`,backgroundColor:`${cfg.color??"#000"}22`}}/>;
-            else if(item.type==="mirror") visual=<div className="ob-fill ob-mirror" style={{overflow:"hidden"}}><div style={{transform:"scaleY(-1)",width:"100%",height:"100%",background:"rgba(91,68,255,0.08)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.7rem",color:"rgba(255,255,255,0.6)"}}>↕ Gương</div></div>;
-            else if(isText) visual=<div className="ob-text" style={{fontSize:`${Math.max(10,(cfg.fontSize as number??18)*scaleX)}px`,color:(cfg.color as string)??"#fff"}}>{(cfg.text as string)||"Văn bản"}</div>;
+            else if(item.type==="mirror") visual=<div className="ob-fill ob-mirror" style={{overflow:"hidden"}}>{project?.videoPath ? <video src={project.videoPath} className="ob-mirror-video" style={{width:"100%",height:"100%",objectFit:"cover",transform:"scaleY(-1)",opacity:0.7,pointerEvents:"none"}} muted autoPlay loop playsInline ref={(el)=>{if(el){mirrorRefs.current.add(el); if(videoRef.current){el.currentTime=videoRef.current.currentTime; if(!videoRef.current.paused) el.play().catch(()=>{});}} else {/* null ref = unmount, cleaned via Set iteration */}}} /> : <div style={{width:"100%",height:"100%",background:"rgba(91,68,255,0.08)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.7rem",color:"rgba(255,255,255,0.6)"}}>↕ Gương</div>}</div>;
+            else if(isText) visual=<div className="ob-text" style={{fontSize:`${Math.max(12,(cfg.fontSize as number??18)*Math.max(scaleX,scaleY)*1.8)}px`,color:(cfg.color as string)??"#fff"}}>{(cfg.text as string)||"Văn bản"}</div>;
             else { const p=cfg.path as string; visual=p?<img src={p} className="ob-img" alt=""/>:<div className="ob-placeholder">{ti?.icon} {ti?.label}</div>; }
 
             return (
