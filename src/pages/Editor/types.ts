@@ -74,6 +74,9 @@ export interface TextOverlayConfig {
   fontFamily: string;
   fontSize: number;
   color: string;
+  bgColor: string;
+  bgShape: "none" | "rounded" | "box";
+  bgOpacity: number;
   [key: string]: unknown;
 }
 

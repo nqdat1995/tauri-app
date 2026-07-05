@@ -18,7 +18,7 @@ export function Sidebar({ activeTab, onChange, isDirty }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="logo">
-        <h2>dichvideo.com</h2>
+        <h2>Hạt Đồng Tool</h2>
         <span>Giao diện dịch video</span>
       </div>
       <nav>

@@ -119,18 +119,21 @@ export function VideoPlayer() {
   const scaleX = bounds.w / 1920 || 0.001;
   const scaleY = bounds.h / 1080 || 0.001;
 
-  const subScale = bounds.w / 1920 || 0.5;
-  const scaledSubFontSize = Math.max(12, Math.round(activeStyle.fontSize * subScale * 2.5));
+  // Subtitle font size: scale proportionally to video viewport height
+  // In reference 1080p, fontSize 14 → ~1.3% of height. Apply same ratio to current bounds.
+  const subFontRatio = (activeStyle.fontSize / 1080);
+  const scaledSubFontSize = Math.max(12, Math.round(bounds.h * subFontRatio * 2));
 
   const subStyle: React.CSSProperties = activeCue ? {
     fontFamily: activeStyle.fontFamily, fontSize: `${scaledSubFontSize}px`, color: activeStyle.textColor,
     backgroundColor: activeStyle.bgShape!=="none" ? `${activeStyle.bgColor}${Math.round((activeStyle.bgOpacity/100)*255).toString(16).padStart(2,"0")}` : "transparent",
     borderRadius: activeStyle.bgShape==="rounded"?"6px":activeStyle.bgShape==="box"?"3px":"0",
-    padding: activeStyle.bgShape!=="none"?"4px 14px":"4px",
+    padding: activeStyle.bgShape!=="none"?"6px 18px":"4px",
     textShadow: activeStyle.bgShape==="none"?"0 1px 3px rgba(0,0,0,0.8)":"none",
     maxWidth:"100%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600, pointerEvents:"none", userSelect:"none",
+    lineHeight: "1.4",
   } : {};
-  const subHeight = Math.max(30, scaledSubFontSize + 16);
+  const subHeight = Math.max(30, scaledSubFontSize * 1.4 + 16);
 
   return (
     <div className="video-player">
@@ -158,7 +161,16 @@ export function VideoPlayer() {
             if(item.type==="background_overlay") visual=<div className="ob-fill" style={{backgroundColor:`${cfg.color??"#000"}${Math.round(((cfg.opacity as number??50)/100)*255).toString(16).padStart(2,"0")}`}}/>;
             else if(item.type==="blur") visual=<div className="ob-fill" style={{backdropFilter:`blur(${(cfg.opacity as number??30)/10}px)`,WebkitBackdropFilter:`blur(${(cfg.opacity as number??30)/10}px)`,backgroundColor:`${cfg.color??"#000"}22`}}/>;
             else if(item.type==="mirror") visual=<div className="ob-fill ob-mirror" style={{overflow:"hidden"}}><canvas ref={(el)=>{if(el){el.width=Math.round(w);el.height=Math.round(h);mirrorCanvasRefs.current.set(item.id,{canvas:el,item:{x:item.position.x,y:item.position.y,w:item.size.width,h:item.size.height,rotate180:!!(cfg.rotate180)}});}else{mirrorCanvasRefs.current.delete(item.id);}}} style={{width:"100%",height:"100%",display:"block"}} /></div>;
-            else if(isText) visual=<div className="ob-text" style={{fontSize:`${Math.max(12,(cfg.fontSize as number??18)*Math.max(scaleX,scaleY)*1.8)}px`,color:(cfg.color as string)??"#fff",padding:"4px 10px"}}>{(cfg.text as string)||"Văn bản"}</div>;
+            else if(isText) {
+              const bgShape = (cfg.bgShape as string) ?? "rounded";
+              const bgColor = (cfg.bgColor as string) ?? "#000000";
+              const bgOpacity = (cfg.bgOpacity as number) ?? 70;
+              const bgStyle: React.CSSProperties = bgShape !== "none" ? {
+                backgroundColor: `${bgColor}${Math.round((bgOpacity/100)*255).toString(16).padStart(2,"0")}`,
+                borderRadius: bgShape === "rounded" ? "6px" : "3px",
+              } : {};
+              visual=<div className="ob-text" style={{fontSize:`${Math.max(12,(cfg.fontSize as number??18)*Math.max(scaleX,scaleY)*1.8)}px`,color:(cfg.color as string)??"#fff",padding:"4px 10px",...bgStyle}}>{(cfg.text as string)||"Văn bản"}</div>;
+            }
             else { const p=cfg.path as string; const opacity=(cfg.opacity as number ?? 100)/100; visual=p?<img src={p} className="ob-img" style={{opacity}} alt=""/>:<div className="ob-placeholder">{ti?.icon} {ti?.label}</div>; }
 
             return (

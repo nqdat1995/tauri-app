@@ -482,7 +482,7 @@ Root Cause Analysis:
 ## Bug Fix Session — Pending Issues Resolved
 **Timestamp**: 2026-07-05T00:00:00Z
 **User Input**: "Sử dụng AI-DLC, thực hiện kiểm tra file audit.md và fix các Pending Issues ngày 2026-04-04"
-**AI Response**: Phân tích 5 pending issues từ session 2026-07-04. Xác định root cause cho từng bug. Thực hiện fix toàn bộ. Build PASSED (cargo check + tsc --noEmit, 0 errors).
+**AI Response**: Phân tích 5 pending iFssues từ session 2026-07-04. Xác định root cause cho từng bug. Thực hiện fix toàn bộ. Build PASSED (cargo check + tsc --noEmit, 0 errors).
 **Build Status**: SUCCESS (cargo check PASSED, tsc --noEmit PASSED, 0 errors)
 **Context**: CONSTRUCTION - Bug Fix session. All 5 pending issues from 2026-07-04 resolved.
 
@@ -714,5 +714,50 @@ Root Cause Analysis:
 **Files Modified** (2 files):
 - `src/pages/Editor/VideoPlayer.tsx` — toggleFS target: `.closest(".video-player")`
 - `src/pages/Editor/editor.css` — Fullscreen layout CSS cho .video-player
+
+---
+
+## Bug Fix — Subtitle Fullscreen Size & Logo Border (Round 7)
+**Timestamp**: 2026-07-05T06:00:00Z
+**User Input**: Subtitle kích thước chưa đúng khi fullscreen. Logo viền vẫn thừa — cần khớp chính xác với kích thước ảnh gốc, nếu ảnh quá lớn thì auto-scale.
+**Build Status**: SUCCESS (tsc --noEmit PASSED, 0 errors)
+**Context**: CONSTRUCTION - Bug Fix session.
+
+**Fixes:**
+
+**Issue 1 — Subtitle size chưa đúng fullscreen:**
+- Root cause: Formula `fontSize * (bounds.w/1920) * 2.5` — hệ số 2.5 không tỷ lệ đúng. Cần tính theo tỷ lệ chiều cao viewport (vì text size cảm quan phụ thuộc chiều cao hơn chiều rộng).
+- Fix: Đổi formula sang `bounds.h * (activeStyle.fontSize / 1080) * 2`. Đây là tỷ lệ fontSize/viewport height consistent ở mọi viewport size. Thêm `lineHeight: "1.4"` và `subHeight = scaledFontSize * 1.4 + 16` để Rnd height khớp với rendered text.
+- File: `src/pages/Editor/VideoPlayer.tsx`
+
+**Issue 2 — Logo viền không khớp kích thước ảnh:**
+- Root cause: Upload handler dùng `item.size.width` (default 200 từ store) làm base width rồi tính height từ aspect ratio. Kết quả: container luôn 200px width bất kể image thực tế có kích thước khác → `object-fit` phải scale → dư space.
+- Fix: Dùng `img.naturalWidth` / `img.naturalHeight` trực tiếp làm overlay size. Nếu quá lớn: logo cap tại 480×360, watermark cap tại 300×200 (scale proportional). Container size = exact image dimensions → image fill 100% không dư.
+- File: `src/pages/Editor/OverlayPanel.tsx`
+
+**Files Modified** (2 files):
+- `src/pages/Editor/VideoPlayer.tsx` — Subtitle: height-based font scaling formula
+- `src/pages/Editor/OverlayPanel.tsx` — Logo/Watermark: use natural dimensions + max size cap
+
+---
+
+## Enhancement — Text Overlay Background Config
+**Timestamp**: 2026-07-05T07:00:00Z
+**User Input**: Overlay Chữ: bổ sung thêm cấu hình nền giống subtitle (bgColor, bgShape, bgOpacity).
+**Build Status**: SUCCESS (tsc --noEmit PASSED, 0 errors)
+**Context**: CONSTRUCTION - Enhancement.
+
+**Implementation:**
+- `TextOverlayConfig` thêm 3 fields: `bgColor: string`, `bgShape: "none" | "rounded" | "box"`, `bgOpacity: number`
+- Default config: `bgColor: "#000000"`, `bgShape: "rounded"`, `bgOpacity: 70`
+- Config panel: select "Hình dạng nền" (Không nền / Bo tròn / Hộp vuông). Khi != "none" → hiện color picker "Màu nền" + slider "Độ đục nền"
+- Rendering: apply backgroundColor với opacity hex + borderRadius tương ứng shape
+
+**Files Modified** (4 files):
+- `src/pages/Editor/types.ts` — TextOverlayConfig: +bgColor, +bgShape, +bgOpacity
+- `src/pages/Editor/store.ts` — Default text config with bg values
+- `src/pages/Editor/OverlayPanel.tsx` — Text config panel: select + conditional color/opacity controls
+- `src/pages/Editor/VideoPlayer.tsx` — Text overlay render: apply bg styles
+- `src/pages/Editor/editor.css` — `.overlay-config__select` styles
 
 ---

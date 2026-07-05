@@ -195,6 +195,38 @@ function OverlayConfigFields({ item, onUpdate }: { item: OverlayItem; onUpdate: 
               onChange={(e) => updateConfig({ color: e.target.value })}
             />
           </div>
+          <div className="overlay-config__field">
+            <label>Hình dạng nền</label>
+            <select
+              value={(config.bgShape as string) ?? "rounded"}
+              onChange={(e) => updateConfig({ bgShape: e.target.value })}
+              className="overlay-config__select"
+            >
+              <option value="none">Không nền</option>
+              <option value="rounded">Bo tròn</option>
+              <option value="box">Hộp vuông</option>
+            </select>
+          </div>
+          {(config.bgShape as string) !== "none" && (
+            <>
+              <div className="overlay-config__field">
+                <label>Màu nền</label>
+                <input
+                  type="color"
+                  value={(config.bgColor as string) ?? "#000000"}
+                  onChange={(e) => updateConfig({ bgColor: e.target.value })}
+                />
+              </div>
+              <div className="overlay-config__field">
+                <label>Độ đục nền: {(config.bgOpacity as number) ?? 70}%</label>
+                <input
+                  type="range" min="0" max="100"
+                  value={(config.bgOpacity as number) ?? 70}
+                  onChange={(e) => updateConfig({ bgOpacity: parseInt(e.target.value, 10) })}
+                />
+              </div>
+            </>
+          )}
         </div>
       );
     case "logo":
@@ -216,12 +248,16 @@ function OverlayConfigFields({ item, onUpdate }: { item: OverlayItem; onUpdate: 
                       const url = URL.createObjectURL(file);
                       const img = new Image();
                       img.onload = () => {
-                        const aspect = img.naturalWidth / img.naturalHeight;
-                        const currentWidth = item.size.width;
-                        const newHeight = Math.round(currentWidth / aspect);
+                        // Use natural image dimensions, scale down if too large for 1920x1080 space
+                        let w = img.naturalWidth;
+                        let h = img.naturalHeight;
+                        const maxW = 480; // max width in 1920 reference space
+                        const maxH = 360; // max height in 1080 reference space
+                        if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; }
+                        if (h > maxH) { w = Math.round(w * (maxH / h)); h = maxH; }
                         onUpdate(item.id, {
                           config: { ...config, path: url } as OverlayConfig,
-                          size: { width: currentWidth, height: newHeight },
+                          size: { width: w, height: h },
                         });
                       };
                       img.onerror = () => {
@@ -264,12 +300,15 @@ function OverlayConfigFields({ item, onUpdate }: { item: OverlayItem; onUpdate: 
                       const url = URL.createObjectURL(file);
                       const img = new Image();
                       img.onload = () => {
-                        const aspect = img.naturalWidth / img.naturalHeight;
-                        const currentWidth = item.size.width;
-                        const newHeight = Math.round(currentWidth / aspect);
+                        let w = img.naturalWidth;
+                        let h = img.naturalHeight;
+                        const maxW = 300;
+                        const maxH = 200;
+                        if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; }
+                        if (h > maxH) { w = Math.round(w * (maxH / h)); h = maxH; }
                         onUpdate(item.id, {
                           config: { ...config, path: url } as OverlayConfig,
-                          size: { width: currentWidth, height: newHeight },
+                          size: { width: w, height: h },
                         });
                       };
                       img.onerror = () => {

@@ -39,7 +39,7 @@ function getDefaultConfig(type: OverlayType): OverlayConfig {
     case "mirror":
       return { rotate180: false };
     case "text":
-      return { text: "Văn bản", fontFamily: "system-ui", fontSize: 18, color: "#ffffff" };
+      return { text: "Văn bản", fontFamily: "system-ui", fontSize: 18, color: "#ffffff", bgColor: "#000000", bgShape: "rounded", bgOpacity: 70 };
     case "logo":
       return { path: "", opacity: 100 };
     case "watermark":

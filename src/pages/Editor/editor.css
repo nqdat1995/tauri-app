@@ -252,3 +252,7 @@
 .video-player:fullscreen .video-player__controls { background: rgba(0,0,0,0.8); }
 .video-player:-webkit-full-screen { display: flex; flex-direction: column; background: #000; }
 .video-player:-webkit-full-screen .video-player__viewport { flex: 1; max-height: none; aspect-ratio: unset; }
+
+/* Overlay config select dropdown */
+.overlay-config__select { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 0.8rem; outline: none; cursor: pointer; transition: border-color 0.15s; }
+.overlay-config__select:focus { border-color: var(--brand); }
