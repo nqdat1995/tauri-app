@@ -87,11 +87,8 @@ export function VideoPlayer() {
           // Rotate 180° = flip both horizontal and vertical
           ctx.translate(cw, ch);
           ctx.scale(-1, -1);
-        } else {
-          // Default: flip vertical only
-          ctx.translate(0, ch);
-          ctx.scale(1, -1);
         }
+        // Default: no transform — matches original video orientation
         ctx.drawImage(v, srcX, srcY, srcW, srcH, 0, 0, cw, ch);
         ctx.restore();
       });

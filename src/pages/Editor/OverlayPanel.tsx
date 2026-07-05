@@ -155,15 +155,16 @@ function OverlayConfigFields({ item, onUpdate }: { item: OverlayItem; onUpdate: 
         <div className="overlay-panel__config-fields">
           <div className="overlay-config__field overlay-config__field--toggle">
             <label>Xoay 180°</label>
-            <button
-              type="button"
-              className={`overlay-config__toggle-btn ${(config.rotate180 as boolean) ? "overlay-config__toggle-btn--on" : ""}`}
+            <div
+              className={`overlay-config__switch ${(config.rotate180 as boolean) ? "overlay-config__switch--on" : ""}`}
               onClick={() => updateConfig({ rotate180: !(config.rotate180 as boolean) })}
+              role="switch"
+              aria-checked={!!(config.rotate180 as boolean)}
             >
-              {(config.rotate180 as boolean) ? "ON" : "OFF"}
-            </button>
+              <div className="overlay-config__switch-thumb" />
+            </div>
           </div>
-          <p className="overlay-panel__config-info">Bật để xoay 180° (lật ngang + dọc). Tắt = chỉ lật dọc.</p>
+          <p className="overlay-panel__config-info">Bật để xoay nội dung 180°. Tắt = hiển thị cùng hướng video gốc.</p>
         </div>
       );
     case "text":

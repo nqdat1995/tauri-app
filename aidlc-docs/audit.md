@@ -610,3 +610,30 @@ Root Cause Analysis:
 - `src/pages/Editor/types.ts` — MirrorOverlayConfig `rotate180`, index signatures on all config interfaces
 
 ---
+
+## Bug Fix Session — Mirror Orientation & Logo Ratio (Round 4)
+**Timestamp**: 2026-07-05T03:00:00Z
+**User Input**: Feedback:
+1. Mirror overlay bị rotate 180° so với video gốc mặc định. Button Xoay 180° dùng để quyết định có quay hay giữ nguyên hướng gốc. Button cần đổi sang dạng Toggle switch.
+2. Logo bị thay đổi tỷ lệ (bị méo) dù viền đã bao đúng.
+**Build Status**: SUCCESS (tsc --noEmit PASSED, 0 errors)
+**Context**: CONSTRUCTION - Bug Fix session.
+
+**Fixes:**
+
+**Issue 1 — Mirror mặc định bị flip:**
+- Root cause: Default (rotate180=false) vẫn apply `ctx.translate(0,ch) + ctx.scale(1,-1)` (flip dọc), nghĩa là mặc định đã bị lật ngược so với video gốc.
+- Fix: Bỏ flip dọc khỏi default case. Giờ default = vẽ video region nguyên bản (cùng hướng gốc). Chỉ khi `rotate180=true` mới apply `translate(cw,ch) + scale(-1,-1)`. Đổi button ON/OFF text sang toggle switch (div + thumb CSS transition).
+- Files: `src/pages/Editor/VideoPlayer.tsx`, `src/pages/Editor/OverlayPanel.tsx`, `src/pages/Editor/editor.css`
+
+**Issue 2 — Logo bị méo:**
+- Root cause: Lần fix trước đổi `.ov-item--media .ob-img` sang `object-fit: fill` — fill ép image lấp đầy container bất chấp tỷ lệ gốc → méo hình.
+- Fix: Đổi lại sang `object-fit: contain`. Vì Rnd container đã được auto-resize theo aspect ratio thực của ảnh (từ img.onload logic), contain sẽ vừa khít mà không méo.
+- File: `src/pages/Editor/editor.css`
+
+**Files Modified** (3 files):
+- `src/pages/Editor/VideoPlayer.tsx` — Mirror canvas draw: remove default flip, only flip when rotate180=true
+- `src/pages/Editor/OverlayPanel.tsx` — Mirror toggle: switch UI thay vì text button
+- `src/pages/Editor/editor.css` — Logo: object-fit:contain. Toggle switch styles thay toggle button
+
+---
