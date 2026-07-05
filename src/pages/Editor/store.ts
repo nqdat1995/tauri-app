@@ -52,17 +52,17 @@ function getDefaultConfig(type: OverlayType): OverlayConfig {
 function getDefaultSize(type: OverlayType): { width: number; height: number } {
   switch (type) {
     case "background_overlay":
-      return { width: 1920, height: 1080 };
+      return { width: 600, height: 400 };
     case "blur":
-      return { width: 400, height: 300 };
+      return { width: 500, height: 350 };
     case "mirror":
-      return { width: 1920, height: 1080 };
+      return { width: 500, height: 400 };
     case "text":
-      return { width: 200, height: 40 };
+      return { width: 300, height: 50 };
     case "logo":
-      return { width: 120, height: 60 };
+      return { width: 200, height: 100 };
     case "watermark":
-      return { width: 80, height: 80 };
+      return { width: 150, height: 80 };
   }
 }
 
@@ -282,7 +282,7 @@ export const useEditorStore = create<EditorState & EditorActions>((set, get) => 
       type,
       enabled: true,
       config: getDefaultConfig(type),
-      position: { x: 50, y: 50 },
+      position: { x: (1920 - getDefaultSize(type).width) / 2, y: (1080 - getDefaultSize(type).height) / 2 },
       size: getDefaultSize(type),
     };
 

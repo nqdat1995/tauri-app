@@ -191,12 +191,17 @@ function OverlayConfigFields({ item, onUpdate }: { item: OverlayItem; onUpdate: 
       return (
         <div className="overlay-panel__config-fields">
           <div className="overlay-config__field">
-            <label>Đường dẫn file</label>
+            <label>Chọn hình ảnh</label>
             <input
-              type="text"
-              value={(config.path as string) ?? ""}
-              onChange={(e) => updateConfig({ path: e.target.value })}
-              placeholder="Chọn hoặc nhập đường dẫn..."
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const url = URL.createObjectURL(file);
+                  updateConfig({ path: url });
+                }
+              }}
             />
           </div>
           <div className="overlay-config__field">
