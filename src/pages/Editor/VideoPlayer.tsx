@@ -24,7 +24,7 @@ function snap(x: number, y: number, iw: number, ih: number, bw: number, bh: numb
 export function VideoPlayer() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const boundsRef = useRef<HTMLDivElement>(null);
-  const mirrorCanvasRefs = useRef<Map<string, { canvas: HTMLCanvasElement; item: { x: number; y: number; w: number; h: number } }>>(new Map());
+  const mirrorCanvasRefs = useRef<Map<string, { canvas: HTMLCanvasElement; item: { x: number; y: number; w: number; h: number; rotate180: boolean } }>>(new Map());
   const mirrorAnimRef = useRef<number>(0);
   const [muted, setMuted] = useState(false);
   const [bounds, setBounds] = useState({ w: 0, h: 0 });
@@ -78,15 +78,20 @@ export function VideoPlayer() {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
         const cw = canvas.width, ch = canvas.height;
-        // Sample from the region at the mirror overlay's position in video coordinates
-        // The overlay position is in 1920x1080 reference space
         const srcX = (pos.x / 1920) * v.videoWidth;
         const srcY = (pos.y / 1080) * v.videoHeight;
         const srcW = (pos.w / 1920) * v.videoWidth;
         const srcH = (pos.h / 1080) * v.videoHeight;
         ctx.save();
-        ctx.translate(0, ch);
-        ctx.scale(1, -1);
+        if (pos.rotate180) {
+          // Rotate 180° = flip both horizontal and vertical
+          ctx.translate(cw, ch);
+          ctx.scale(-1, -1);
+        } else {
+          // Default: flip vertical only
+          ctx.translate(0, ch);
+          ctx.scale(1, -1);
+        }
         ctx.drawImage(v, srcX, srcY, srcW, srcH, 0, 0, cw, ch);
         ctx.restore();
       });
@@ -96,6 +101,15 @@ export function VideoPlayer() {
     return () => { running = false; cancelAnimationFrame(mirrorAnimRef.current); };
   }, []);
   useEffect(() => { if (bounds.w > 0 && !subInit) { setSubPos({ x: bounds.w * 0.1, y: bounds.h * 0.82 }); setSubInit(true); } }, [bounds, subInit]);
+  // Keep subtitle position proportional when bounds change (e.g., video fullscreen)
+  const prevBoundsRef = useRef({ w: 0, h: 0 });
+  useEffect(() => {
+    const prev = prevBoundsRef.current;
+    if (subInit && prev.w > 0 && prev.h > 0 && bounds.w > 0 && bounds.h > 0 && (prev.w !== bounds.w || prev.h !== bounds.h)) {
+      setSubPos((p) => ({ x: (p.x / prev.w) * bounds.w, y: (p.y / prev.h) * bounds.h }));
+    }
+    prevBoundsRef.current = { w: bounds.w, h: bounds.h };
+  }, [bounds, subInit]);
   useEffect(() => { const v = videoRef.current; if (!v) return; const t = () => setCurrentTime(v.currentTime); const e = () => setPlaying(false); v.addEventListener("timeupdate", t); v.addEventListener("ended", e); return () => { v.removeEventListener("timeupdate", t); v.removeEventListener("ended", e); }; }, [setCurrentTime, setPlaying]);
 
   const playPause = useCallback(() => { const v = videoRef.current; if (v) { if (isPlaying) v.pause(); else v.play().catch(()=>{}); } setPlaying(!isPlaying); }, [isPlaying, setPlaying]);
@@ -135,20 +149,23 @@ export function VideoPlayer() {
             if(isNaN(x)||isNaN(y)) return null;
             const isText=item.type==="text";
             const resizeCfg = isText ? false : { top:false,right:false,bottom:false,left:false,topRight:false,bottomRight:true,bottomLeft:false,topLeft:false };
+            // For text overlays, size is driven by content — use auto dimensions
+            const rndW = isText ? "auto" : w;
+            const rndH = isText ? "auto" : h;
 
             let visual: React.ReactNode;
             if(item.type==="background_overlay") visual=<div className="ob-fill" style={{backgroundColor:`${cfg.color??"#000"}${Math.round(((cfg.opacity as number??50)/100)*255).toString(16).padStart(2,"0")}`}}/>;
             else if(item.type==="blur") visual=<div className="ob-fill" style={{backdropFilter:`blur(${(cfg.opacity as number??30)/10}px)`,WebkitBackdropFilter:`blur(${(cfg.opacity as number??30)/10}px)`,backgroundColor:`${cfg.color??"#000"}22`}}/>;
-            else if(item.type==="mirror") visual=<div className="ob-fill ob-mirror" style={{overflow:"hidden"}}><canvas ref={(el)=>{if(el){el.width=Math.round(w);el.height=Math.round(h);mirrorCanvasRefs.current.set(item.id,{canvas:el,item:{x:item.position.x,y:item.position.y,w:item.size.width,h:item.size.height}});}else{mirrorCanvasRefs.current.delete(item.id);}}} style={{width:"100%",height:"100%",display:"block",opacity:0.85}} /></div>;
-            else if(isText) visual=<div className="ob-text" style={{fontSize:`${Math.max(12,(cfg.fontSize as number??18)*Math.max(scaleX,scaleY)*1.8)}px`,color:(cfg.color as string)??"#fff"}}>{(cfg.text as string)||"Văn bản"}</div>;
-            else { const p=cfg.path as string; visual=p?<img src={p} className="ob-img" alt=""/>:<div className="ob-placeholder">{ti?.icon} {ti?.label}</div>; }
+            else if(item.type==="mirror") visual=<div className="ob-fill ob-mirror" style={{overflow:"hidden"}}><canvas ref={(el)=>{if(el){el.width=Math.round(w);el.height=Math.round(h);mirrorCanvasRefs.current.set(item.id,{canvas:el,item:{x:item.position.x,y:item.position.y,w:item.size.width,h:item.size.height,rotate180:!!(cfg.rotate180)}});}else{mirrorCanvasRefs.current.delete(item.id);}}} style={{width:"100%",height:"100%",display:"block",opacity:0.85}} /></div>;
+            else if(isText) visual=<div className="ob-text" style={{fontSize:`${Math.max(12,(cfg.fontSize as number??18)*Math.max(scaleX,scaleY)*1.8)}px`,color:(cfg.color as string)??"#fff",padding:"4px 10px"}}>{(cfg.text as string)||"Văn bản"}</div>;
+            else { const p=cfg.path as string; const opacity=(cfg.opacity as number ?? 100)/100; visual=p?<img src={p} className="ob-img" style={{opacity}} alt=""/>:<div className="ob-placeholder">{ti?.icon} {ti?.label}</div>; }
 
             return (
-              <Rnd key={item.id} position={{x,y}} size={{width:w,height:h}} bounds="parent" enableResizing={resizeCfg} lockAspectRatio={item.type==="logo"||item.type==="watermark"}
+              <Rnd key={item.id} position={{x,y}} size={{width:rndW,height:rndH}} bounds="parent" enableResizing={resizeCfg} lockAspectRatio={item.type==="logo"||item.type==="watermark"}
                 onDragStart={()=>setGuides(true)}
-                onDragStop={(_e,d)=>{ const s=snap(d.x,d.y,w,h,bounds.w,bounds.h); updateOverlay(item.id,{position:{x:Math.round(s.x/scaleX),y:Math.round(s.y/scaleY)}}); setGuides(false); }}
+                onDragStop={(_e,d)=>{ const s=snap(d.x,d.y,typeof rndW==="number"?rndW:w,typeof rndH==="number"?rndH:h,bounds.w,bounds.h); updateOverlay(item.id,{position:{x:Math.round(s.x/scaleX),y:Math.round(s.y/scaleY)}}); setGuides(false); }}
                 onResizeStop={(_e,_d,ref,_dl,pos)=>{ updateOverlay(item.id,{size:{width:Math.round(parseInt(ref.style.width)/scaleX),height:Math.round(parseInt(ref.style.height)/scaleY)},position:{x:Math.round(pos.x/scaleX),y:Math.round(pos.y/scaleY)}}); setGuides(false); }}
-                className={`ov-item ${isText?"ov-item--text":""}`}>
+                className={`ov-item ${isText?"ov-item--text":""} ${(item.type==="logo"||item.type==="watermark")?"ov-item--media":""}`}>
                 {visual}
                 {!isText && <div className="ov-resize-handle"/>}
               </Rnd>

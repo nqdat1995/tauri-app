@@ -55,15 +55,18 @@ export interface OverlaySize {
 export interface BackgroundOverlayConfig {
   color: string;
   opacity: number;
+  [key: string]: unknown;
 }
 
 export interface BlurOverlayConfig {
   color: string;
   opacity: number;
+  [key: string]: unknown;
 }
 
 export interface MirrorOverlayConfig {
-  // No extra config — toggle only
+  rotate180: boolean;
+  [key: string]: unknown;
 }
 
 export interface TextOverlayConfig {
@@ -71,16 +74,19 @@ export interface TextOverlayConfig {
   fontFamily: string;
   fontSize: number;
   color: string;
+  [key: string]: unknown;
 }
 
 export interface LogoOverlayConfig {
   path: string;
   opacity: number;
+  [key: string]: unknown;
 }
 
 export interface WatermarkOverlayConfig {
   path: string;
   opacity: number;
+  [key: string]: unknown;
 }
 
 export type OverlayConfig =

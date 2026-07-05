@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { useEditorStore } from "./store";
 import { OVERLAY_TYPES, MAX_OVERLAY_INSTANCES } from "./constants";
-import type { OverlayType, OverlayItem } from "./types";
+import type { OverlayType, OverlayItem, OverlayConfig } from "./types";
 
 export function OverlayPanel() {
   const overlays = useEditorStore((s) => s.overlays);
@@ -124,7 +124,7 @@ function OverlayConfigFields({ item, onUpdate }: { item: OverlayItem; onUpdate: 
   const config = item.config as Record<string, unknown>;
 
   const updateConfig = (updates: Record<string, unknown>) => {
-    onUpdate(item.id, { config: { ...config, ...updates } });
+    onUpdate(item.id, { config: { ...config, ...updates } as OverlayConfig });
   };
 
   switch (item.type) {
@@ -153,7 +153,17 @@ function OverlayConfigFields({ item, onUpdate }: { item: OverlayItem; onUpdate: 
     case "mirror":
       return (
         <div className="overlay-panel__config-fields">
-          <p className="overlay-panel__config-info">Hiệu ứng gương — bật/tắt bằng icon mắt bên trái.</p>
+          <div className="overlay-config__field overlay-config__field--toggle">
+            <label>Xoay 180°</label>
+            <button
+              type="button"
+              className={`overlay-config__toggle-btn ${(config.rotate180 as boolean) ? "overlay-config__toggle-btn--on" : ""}`}
+              onClick={() => updateConfig({ rotate180: !(config.rotate180 as boolean) })}
+            >
+              {(config.rotate180 as boolean) ? "ON" : "OFF"}
+            </button>
+          </div>
+          <p className="overlay-panel__config-info">Bật để xoay 180° (lật ngang + dọc). Tắt = chỉ lật dọc.</p>
         </div>
       );
     case "text":
@@ -187,6 +197,53 @@ function OverlayConfigFields({ item, onUpdate }: { item: OverlayItem; onUpdate: 
         </div>
       );
     case "logo":
+      return (
+        <div className="overlay-panel__config-fields">
+          <div className="overlay-config__field overlay-config__field--file">
+            <label>Chọn hình ảnh</label>
+            <div className="overlay-config__file-wrapper">
+              <button
+                type="button"
+                className="overlay-config__file-btn"
+                onClick={() => {
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.accept = "image/*";
+                  input.onchange = () => {
+                    const file = input.files?.[0];
+                    if (file) {
+                      const url = URL.createObjectURL(file);
+                      const img = new Image();
+                      img.onload = () => {
+                        const aspect = img.naturalWidth / img.naturalHeight;
+                        const currentWidth = item.size.width;
+                        const newHeight = Math.round(currentWidth / aspect);
+                        onUpdate(item.id, {
+                          config: { ...config, path: url } as OverlayConfig,
+                          size: { width: currentWidth, height: newHeight },
+                        });
+                      };
+                      img.onerror = () => {
+                        updateConfig({ path: url });
+                      };
+                      img.src = url;
+                    }
+                  };
+                  input.click();
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                {(config.path as string) ? "Đổi hình ảnh" : "Tải lên hình ảnh"}
+              </button>
+              {(config.path as string) && (
+                <div className="overlay-config__file-preview">
+                  <img src={config.path as string} alt="Preview" className="overlay-config__file-thumb" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
     case "watermark":
       return (
         <div className="overlay-panel__config-fields">
@@ -204,14 +261,13 @@ function OverlayConfigFields({ item, onUpdate }: { item: OverlayItem; onUpdate: 
                     const file = input.files?.[0];
                     if (file) {
                       const url = URL.createObjectURL(file);
-                      // Load image to get natural dimensions and adjust aspect ratio
                       const img = new Image();
                       img.onload = () => {
                         const aspect = img.naturalWidth / img.naturalHeight;
                         const currentWidth = item.size.width;
                         const newHeight = Math.round(currentWidth / aspect);
                         onUpdate(item.id, {
-                          config: { ...config, path: url },
+                          config: { ...config, path: url } as OverlayConfig,
                           size: { width: currentWidth, height: newHeight },
                         });
                       };
@@ -235,10 +291,10 @@ function OverlayConfigFields({ item, onUpdate }: { item: OverlayItem; onUpdate: 
             </div>
           </div>
           <div className="overlay-config__field">
-            <label>Độ rõ: {(config.opacity as number) ?? 100}%</label>
+            <label>Độ trong suốt: {(config.opacity as number) ?? 50}%</label>
             <input
               type="range" min="0" max="100"
-              value={(config.opacity as number) ?? 100}
+              value={(config.opacity as number) ?? 50}
               onChange={(e) => updateConfig({ opacity: parseInt(e.target.value, 10) })}
             />
           </div>

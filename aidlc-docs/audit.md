@@ -560,3 +560,53 @@ Root Cause Analysis:
 - `src/pages/Editor/store.ts` — Text overlay auto-resize logic trong updateOverlay
 
 ---
+
+## Bug Fix Session — Overlay & Fullscreen Issues (Round 3)
+**Timestamp**: 2026-07-05T02:00:00Z
+**User Input**: Feedback on issues:
+1. Khi mở full màn hình: phụ đề hiển thị sai vị trí
+2. Overlay Chữ: Không tự động scale khung viền để chứa đủ nội dung
+3. Overlay Logo: Khung viền chưa bao bọc logo, còn có các phần thừa xung quanh. Phần cấu hình độ mờ không có tác dụng, nên bỏ đi
+4. Overlay Watermark: Khung viền bị dư giống Logo, Cấu hình độ rõ chưa apply
+5. Đề xuất: Mirror overlay bổ sung Button On/Off để rotate 180°
+**AI Response**: Phân tích root cause cho 4 issues + 1 enhancement. Thực hiện fix toàn bộ. Build PASSED.
+**Build Status**: SUCCESS (cargo check PASSED, tsc --noEmit PASSED, 0 errors)
+**Context**: CONSTRUCTION - Bug Fix session. All issues resolved.
+
+**Root Cause Analysis & Fixes:**
+
+**Issue 1 — Fullscreen subtitle sai vị trí:**
+- Root cause: `subPos` chỉ được set 1 lần khi `subInit=false`. Khi bounds thay đổi (video viewport fullscreen), position không được scale proportionally theo bounds mới.
+- Fix: Thêm `prevBoundsRef` để track bounds trước đó. Khi bounds thay đổi, tự động scale `subPos` theo tỷ lệ `newBounds / prevBounds`.
+- File: `src/pages/Editor/VideoPlayer.tsx`
+
+**Issue 2 — Text overlay border không auto-scale:**
+- Root cause: Rnd wrapper có `size` cố định từ store (width/height px). CSS `.ov-item` có border bao quanh toàn bộ Rnd element → border to hơn nội dung text.
+- Fix: Thay đổi Rnd `size` sang `"auto"` cho text overlays. Thêm CSS `.ov-item--text { width: auto !important; height: auto !important; white-space: nowrap; }` để border tự co theo nội dung. Thêm `padding: 4px 10px` cho `.ob-text`.
+- Files: `src/pages/Editor/VideoPlayer.tsx`, `src/pages/Editor/editor.css`
+
+**Issue 3 — Logo border dư thừa + xóa config opacity:**
+- Root cause: `.ob-img` dùng `object-fit: contain` → image không fill hết container, border bao quanh phần trống. Opacity config có trong panel nhưng không có tác dụng thực tế cho logo.
+- Fix: Thêm class `.ov-item--media` với `background: transparent`, border mỏng hơn. Đổi img sang `object-fit: fill` (size đã correct từ aspect ratio auto-adjust). Tách case `"logo"` và `"watermark"` riêng trong OverlayConfigFields. Logo chỉ có nút chọn file, không còn slider opacity.
+- Files: `src/pages/Editor/OverlayPanel.tsx`, `src/pages/Editor/editor.css`, `src/pages/Editor/VideoPlayer.tsx`
+
+**Issue 4 — Watermark opacity chưa apply:**
+- Root cause: Config `opacity` được lưu trong store nhưng khi render `<img>` trong VideoPlayer, không có `style={{opacity}}` nào được áp dụng.
+- Fix: Thêm `const opacity = (cfg.opacity ?? 100) / 100` và apply `style={{opacity}}` vào element `<img>`. Watermark config panel giữ slider "Độ trong suốt".
+- Files: `src/pages/Editor/VideoPlayer.tsx`, `src/pages/Editor/OverlayPanel.tsx`
+
+**Enhancement — Mirror rotate 180° toggle:**
+- Thêm `rotate180: boolean` vào `MirrorOverlayConfig` interface.
+- Default config: `{ rotate180: false }`.
+- Config panel: thêm styled ON/OFF toggle button.
+- Canvas draw logic: khi `rotate180=true` → `ctx.translate(cw, ch) + ctx.scale(-1, -1)` (flip cả 2 trục = rotate 180°). Khi `false` → chỉ flip dọc (default behavior).
+- Files: `src/pages/Editor/types.ts`, `src/pages/Editor/store.ts`, `src/pages/Editor/OverlayPanel.tsx`, `src/pages/Editor/VideoPlayer.tsx`, `src/pages/Editor/editor.css`
+
+**Files Modified** (5 files):
+- `src/pages/Editor/VideoPlayer.tsx` — Subtitle proportional scaling, text auto-size, media class, opacity apply, mirror rotate180
+- `src/pages/Editor/OverlayPanel.tsx` — Split logo/watermark config, remove logo opacity, add mirror toggle, OverlayConfig import + type assertion
+- `src/pages/Editor/editor.css` — .ov-item--media, .ov-item--text auto-size, toggle button styles
+- `src/pages/Editor/store.ts` — Mirror default config `{ rotate180: false }`
+- `src/pages/Editor/types.ts` — MirrorOverlayConfig `rotate180`, index signatures on all config interfaces
+
+---

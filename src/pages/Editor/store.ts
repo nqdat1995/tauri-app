@@ -37,7 +37,7 @@ function getDefaultConfig(type: OverlayType): OverlayConfig {
     case "blur":
       return { color: "#000000", opacity: 30 };
     case "mirror":
-      return {};
+      return { rotate180: false };
     case "text":
       return { text: "Văn bản", fontFamily: "system-ui", fontSize: 18, color: "#ffffff" };
     case "logo":
