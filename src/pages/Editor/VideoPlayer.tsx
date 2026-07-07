@@ -1,11 +1,16 @@
 /**
  * VideoPlayer — Video playback with draggable subtitle + overlay items
  * Bounds are enforced to the actual video area (not letterbox).
+ *
+ * Refactored: Uses viewport utilities for coordinate conversion.
  */
-import { useRef, useCallback, useEffect, useState } from "react";
+import { useRef, useCallback, useEffect, useState, useMemo } from "react";
 import { Rnd } from "react-rnd";
 import { useEditorStore, useActiveCue } from "./store";
 import { OVERLAY_TYPES } from "./constants";
+import { updateViewport } from "./viewport/viewport";
+import { projectToScreen, screenToProject, scaleFontSize } from "./viewport/convert";
+import type { Viewport } from "./viewport/types";
 
 function fmt(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -27,7 +32,7 @@ export function VideoPlayer() {
   const mirrorCanvasRefs = useRef<Map<string, { canvas: HTMLCanvasElement; item: { x: number; y: number; w: number; h: number; rotate180: boolean } }>>(new Map());
   const mirrorAnimRef = useRef<number>(0);
   const [muted, setMuted] = useState(false);
-  const [bounds, setBounds] = useState({ w: 0, h: 0 });
+  const [viewport, setViewport] = useState<Viewport>({ containerWidth: 0, containerHeight: 0, displayWidth: 0, displayHeight: 0, offsetX: 0, offsetY: 0, scaleX: 0, scaleY: 0 });
   const [subPos, setSubPos] = useState({ x: 0, y: 0 });
   const [subInit, setSubInit] = useState(false);
   const [guides, setGuides] = useState(false);
@@ -45,30 +50,39 @@ export function VideoPlayer() {
   const duration = project?.duration ?? 0;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  // Calculate actual video display area (accounting for object-fit: contain letterbox)
-  const updateBounds = useCallback(() => {
+  // Derive bounds from viewport for backward compat
+  const bounds = useMemo(() => ({ w: viewport.displayWidth, h: viewport.displayHeight }), [viewport]);
+
+  // Calculate viewport using the new viewport utility
+  const recalcViewport = useCallback(() => {
     const v = videoRef.current;
     const container = boundsRef.current?.parentElement;
     if (!container) return;
-    if (!v || !v.videoWidth) { setBounds({ w: container.clientWidth, h: container.clientHeight }); return; }
-    const cw = container.clientWidth, ch = container.clientHeight;
-    const vRatio = v.videoWidth / v.videoHeight;
-    const cRatio = cw / ch;
-    let dw: number, dh: number, dx: number, dy: number;
-    if (vRatio > cRatio) { dw = cw; dh = cw / vRatio; dx = 0; dy = (ch - dh) / 2; }
-    else { dh = ch; dw = ch * vRatio; dy = 0; dx = (cw - dw) / 2; }
-    setBounds({ w: dw, h: dh });
+
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    const videoAspect = (v && v.videoWidth) ? (v.videoWidth / v.videoHeight) : (16 / 9);
+
+    const vp = updateViewport(cw, ch, videoAspect);
+    setViewport(vp);
+
+    // Position the bounds div
     const b = boundsRef.current;
-    if (b) { b.style.width = `${dw}px`; b.style.height = `${dh}px`; b.style.left = `${dx}px`; b.style.top = `${dy}px`; }
+    if (b) {
+      b.style.width = `${vp.displayWidth}px`;
+      b.style.height = `${vp.displayHeight}px`;
+      b.style.left = `${vp.offsetX}px`;
+      b.style.top = `${vp.offsetY}px`;
+    }
   }, []);
 
-  useEffect(() => { const v = videoRef.current; if (!v) return; v.addEventListener("loadedmetadata", updateBounds); window.addEventListener("resize", updateBounds); return () => { v.removeEventListener("loadedmetadata", updateBounds); window.removeEventListener("resize", updateBounds); }; }, [updateBounds]);
-  useEffect(() => { updateBounds(); }, [updateBounds]);
-  // Recalculate bounds on fullscreen change — multiple passes to catch layout settling
-  useEffect(() => { const handler = () => { updateBounds(); setTimeout(updateBounds, 100); setTimeout(updateBounds, 300); }; document.addEventListener("fullscreenchange", handler); return () => document.removeEventListener("fullscreenchange", handler); }, [updateBounds]);
-  // ResizeObserver for reliable bounds updates when container size changes
-  useEffect(() => { const container = boundsRef.current?.parentElement; if (!container) return; const ro = new ResizeObserver(() => { updateBounds(); }); ro.observe(container); return () => ro.disconnect(); }, [updateBounds]);
-  // Mirror effect: canvas-based frame sampling with vertical flip
+  useEffect(() => { const v = videoRef.current; if (!v) return; v.addEventListener("loadedmetadata", recalcViewport); window.addEventListener("resize", recalcViewport); return () => { v.removeEventListener("loadedmetadata", recalcViewport); window.removeEventListener("resize", recalcViewport); }; }, [recalcViewport]);
+  useEffect(() => { recalcViewport(); }, [recalcViewport]);
+  // Recalculate on fullscreen change — multiple passes to catch layout settling
+  useEffect(() => { const handler = () => { recalcViewport(); setTimeout(recalcViewport, 100); setTimeout(recalcViewport, 300); }; document.addEventListener("fullscreenchange", handler); return () => document.removeEventListener("fullscreenchange", handler); }, [recalcViewport]);
+  // ResizeObserver for reliable updates when container size changes
+  useEffect(() => { const container = boundsRef.current?.parentElement; if (!container) return; const ro = new ResizeObserver(() => { recalcViewport(); }); ro.observe(container); return () => ro.disconnect(); }, [recalcViewport]);
+  // Mirror effect: canvas-based frame sampling
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -86,11 +100,9 @@ export function VideoPlayer() {
         const srcH = (pos.h / 1080) * v.videoHeight;
         ctx.save();
         if (pos.rotate180) {
-          // Rotate 180° = flip both horizontal and vertical
           ctx.translate(cw, ch);
           ctx.scale(-1, -1);
         }
-        // Default: no transform — matches original video orientation
         ctx.drawImage(v, srcX, srcY, srcW, srcH, 0, 0, cw, ch);
         ctx.restore();
       });
@@ -100,7 +112,7 @@ export function VideoPlayer() {
     return () => { running = false; cancelAnimationFrame(mirrorAnimRef.current); };
   }, []);
   useEffect(() => { if (bounds.w > 0 && !subInit) { setSubPos({ x: bounds.w * 0.1, y: bounds.h * 0.82 }); setSubInit(true); } }, [bounds, subInit]);
-  // Keep subtitle position proportional when bounds change (e.g., video fullscreen)
+  // Keep subtitle position proportional when bounds change
   const prevBoundsRef = useRef({ w: 0, h: 0 });
   useEffect(() => {
     const prev = prevBoundsRef.current;
@@ -119,7 +131,6 @@ export function VideoPlayer() {
 
   const visibleOverlays = overlayItems.filter((i) => {
     if (!i.enabled) return false;
-    // Text overlays: only visible within their time range
     if (i.type === "text") {
       const cfg = i.config as Record<string, unknown>;
       const startTime = (cfg.startTime as number) ?? 0;
@@ -128,13 +139,13 @@ export function VideoPlayer() {
     }
     return true;
   });
-  const scaleX = bounds.w / 1920 || 0.001;
-  const scaleY = bounds.h / 1080 || 0.001;
 
-  // Subtitle font size: scale proportionally to video viewport height
-  // In reference 1080p, fontSize 14 → ~1.3% of height. Apply same ratio to current bounds.
-  const subFontRatio = (activeStyle.fontSize / 1080);
-  const scaledSubFontSize = Math.max(12, Math.round(bounds.h * subFontRatio * 2));
+  // Use viewport scale factors (from new utility)
+  const scaleX = viewport.scaleX || 0.001;
+  const scaleY = viewport.scaleY || 0.001;
+
+  // Subtitle font size: scale using viewport utility
+  const scaledSubFontSize = scaleFontSize(activeStyle.fontSize * 2, viewport, 12);
 
   const subStyle: React.CSSProperties = activeCue ? {
     fontFamily: activeStyle.fontFamily, fontSize: `${scaledSubFontSize}px`, color: activeStyle.textColor,
@@ -160,12 +171,13 @@ export function VideoPlayer() {
           {bounds.w > 0 && visibleOverlays.map((item) => {
             const ti = OVERLAY_TYPES.find(t=>t.type===item.type);
             const cfg = item.config as Record<string,unknown>;
-            const x=item.position.x*scaleX, y=item.position.y*scaleY;
-            const w=Math.max(30,item.size.width*scaleX), h=Math.max(30,item.size.height*scaleY);
+            // Use viewport utilities for coordinate conversion
+            const screenPos = projectToScreen({ x: item.position.x, y: item.position.y }, viewport);
+            const x = screenPos.x, y = screenPos.y;
+            const w = Math.max(30, item.size.width * scaleX), h = Math.max(30, item.size.height * scaleY);
             if(isNaN(x)||isNaN(y)) return null;
             const isText=item.type==="text";
             const resizeCfg = isText ? false : { top:false,right:false,bottom:false,left:false,topRight:false,bottomRight:true,bottomLeft:false,topLeft:false };
-            // For text overlays, size is driven by content — use auto dimensions
             const rndW = isText ? "auto" : w;
             const rndH = isText ? "auto" : h;
 
@@ -181,15 +193,26 @@ export function VideoPlayer() {
                 backgroundColor: `${bgColor}${Math.round((bgOpacity/100)*255).toString(16).padStart(2,"0")}`,
                 borderRadius: bgShape === "rounded" ? "6px" : "3px",
               } : {};
-              visual=<div className="ob-text" style={{fontSize:`${Math.max(12,(cfg.fontSize as number??18)*Math.max(scaleX,scaleY)*1.8)}px`,color:(cfg.color as string)??"#fff",padding:"4px 10px",...bgStyle}}>{(cfg.text as string)||"Văn bản"}</div>;
+              const textFontSize = scaleFontSize((cfg.fontSize as number) ?? 18, viewport, 12);
+              visual=<div className="ob-text" style={{fontSize:`${textFontSize}px`,color:(cfg.color as string)??"#fff",padding:"4px 10px",...bgStyle}}>{(cfg.text as string)||"Văn bản"}</div>;
             }
             else { const p=cfg.path as string; const opacity=(cfg.opacity as number ?? 100)/100; visual=p?<img src={p} className="ob-img" style={{opacity}} alt=""/>:<div className="ob-placeholder">{ti?.icon} {ti?.label}</div>; }
 
             return (
               <Rnd key={item.id} position={{x,y}} size={{width:rndW,height:rndH}} bounds="parent" enableResizing={resizeCfg} lockAspectRatio={item.type==="logo"||item.type==="watermark"}
                 onDragStart={()=>setGuides(true)}
-                onDragStop={(_e,d)=>{ const s=snap(d.x,d.y,typeof rndW==="number"?rndW:w,typeof rndH==="number"?rndH:h,bounds.w,bounds.h); updateOverlay(item.id,{position:{x:Math.round(s.x/scaleX),y:Math.round(s.y/scaleY)}}); setGuides(false); }}
-                onResizeStop={(_e,_d,ref,_dl,pos)=>{ updateOverlay(item.id,{size:{width:Math.round(parseInt(ref.style.width)/scaleX),height:Math.round(parseInt(ref.style.height)/scaleY)},position:{x:Math.round(pos.x/scaleX),y:Math.round(pos.y/scaleY)}}); setGuides(false); }}
+                onDragStop={(_e,d)=>{
+                  const s=snap(d.x,d.y,typeof rndW==="number"?rndW:w,typeof rndH==="number"?rndH:h,bounds.w,bounds.h);
+                  const designPos = screenToProject({ x: s.x, y: s.y }, viewport);
+                  updateOverlay(item.id,{position:{x:designPos.x,y:designPos.y}});
+                  setGuides(false);
+                }}
+                onResizeStop={(_e,_d,ref,_dl,pos)=>{
+                  const designPos = screenToProject({ x: pos.x, y: pos.y }, viewport);
+                  const designSize = screenToProject({ x: parseInt(ref.style.width), y: parseInt(ref.style.height) }, viewport);
+                  updateOverlay(item.id,{size:{width:designSize.x,height:designSize.y},position:{x:designPos.x,y:designPos.y}});
+                  setGuides(false);
+                }}
                 className={`ov-item ${isText?"ov-item--text":""} ${(item.type==="logo"||item.type==="watermark")?"ov-item--media":""}`}>
                 {visual}
                 {!isText && <div className="ov-resize-handle"/>}

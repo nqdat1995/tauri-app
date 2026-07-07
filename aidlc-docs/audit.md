@@ -783,3 +783,117 @@ Root Cause Analysis:
 - `src/pages/Editor/editor.css` — .overlay-config__time-input style
 
 ---
+
+
+---
+
+## New Feature Lifecycle: Video Editor Refactoring (Foundation)
+
+---
+
+## Reverse Engineering - Complete
+**Timestamp**: 2026-07-07T10:00:00Z
+**User Input**: "Bổ sung thực hiện kế hoạch theo file video-editor-refactor-plan.md trước khi chuyển sang phase 2. Thực hiện theo đúng AI-DLC workflow"
+**AI Response**: Phân tích toàn bộ kiến trúc hiện tại của Editor module (12 frontend files, 4 Rust backend files). Tạo reverse engineering artifact. Xác định 5 vấn đề kiến trúc chính: state rải rác, coordinate không nhất quán, renderer đọc store trực tiếp, style gắn object, flat store.
+**Context**: INCEPTION - Reverse Engineering complete.
+
+---
+
+## Requirements Analysis - Complete
+**Timestamp**: 2026-07-07T10:10:00Z
+**User Input**: Trả lời 10 câu hỏi xác nhận: Q1=B (read-only compat), Q2=C (hybrid subtitle position), Q3=B (subtitle=Object + Apply All), Q4=B (3 tracks), Q5=B (style for subtitle+text), Q6=A (Asset registry), Q7=A (useMemo rebuild), Q8=C (grouped nodes), Q9=B (formal Renderer interface), Q10=C (backend unchanged).
+**AI Response**: Phân tích answers, no contradictions. Tạo refactor-requirements.md với 13 FRs + 3 NFRs.
+**Context**: INCEPTION - Requirements Analysis complete.
+
+---
+
+## Workflow Planning - Complete
+**Timestamp**: 2026-07-07T10:15:00Z
+**AI Response**: Tạo execution plan. 4 stages: Application Design → Units Generation → Code Generation → Build and Test. 6 implementation units sequential.
+**Context**: INCEPTION - Workflow Planning complete.
+
+---
+
+## Application Design - Complete
+**Timestamp**: 2026-07-07T10:20:00Z
+**AI Response**: Thiết kế 7 modules mới (model/, assets/, viewport/, scene/, renderer/, adapter/). Full interface definitions, data flow diagram, store architecture, module dependencies, migration strategy, key design decisions.
+**Context**: INCEPTION - Application Design complete.
+
+---
+
+## Units Generation - Complete
+**Timestamp**: 2026-07-07T10:25:00Z
+**AI Response**: 6 units defined: Unit 1 (Project Model: 3 files), Unit 2 (Asset+Style: 2 files), Unit 3 (Viewport: 4 files), Unit 4 (Scene Graph: 4 files), Unit 5 (Adapter: 2 files), Unit 6 (Renderer: 3 files). Total: 18 new files.
+**Context**: INCEPTION - Units Generation complete. Entering CONSTRUCTION.
+
+---
+
+## Code Generation - All Units Complete
+**Timestamp**: 2026-07-07T10:40:00Z
+**Build Status**: SUCCESS (tsc --noEmit PASS, cargo check PASS, vite build PASS)
+**AI Response**: Tất cả 14 files mới tạo thành công. Không sửa file hiện tại. Kiến trúc mới hoàn toàn additive.
+
+**Files Created** (14 files):
+- `src/pages/Editor/model/types.ts` — Project, Object, Asset, Track, Style, Transform interfaces
+- `src/pages/Editor/model/defaults.ts` — Factory functions, preset styles, ID generation
+- `src/pages/Editor/model/index.ts` — Re-exports
+- `src/pages/Editor/assets/AssetRegistry.ts` — Asset CRUD operations
+- `src/pages/Editor/assets/index.ts` — Re-exports
+- `src/pages/Editor/viewport/types.ts` — Viewport interface
+- `src/pages/Editor/viewport/viewport.ts` — createViewport, updateViewport (letterbox)
+- `src/pages/Editor/viewport/convert.ts` — projectToScreen, screenToProject, scaleFontSize
+- `src/pages/Editor/viewport/index.ts` — Re-exports
+- `src/pages/Editor/scene/types.ts` — SceneNode, SceneGraph, node data types
+- `src/pages/Editor/scene/nodes.ts` — Node factory functions (7 types)
+- `src/pages/Editor/scene/builder.ts` — buildScene() with visibility/style/coord logic
+- `src/pages/Editor/scene/index.ts` — Re-exports
+- `src/pages/Editor/adapter/legacy.ts` — legacyToProject + projectToLegacy converters
+- `src/pages/Editor/adapter/index.ts` — Re-exports
+- `src/pages/Editor/renderer/types.ts` — Renderer interface
+- `src/pages/Editor/renderer/HTMLRenderer.tsx` — Full HTML renderer implementation
+- `src/pages/Editor/renderer/index.ts` — Re-exports
+
+**Files Modified**: 0
+**Context**: CONSTRUCTION - Code Generation + Build and Test complete. Lifecycle DONE.
+
+
+---
+
+## Integration Phase — Video Editor Refactoring
+
+---
+
+## Integration Complete
+**Timestamp**: 2026-07-07T12:00:00Z
+**Build Status**: SUCCESS (tsc --noEmit PASS, cargo check PASS, vite build PASS)
+**AI Response**: Toàn bộ Integration Phase hoàn thành.
+
+**Step 1 — Store Refactor:**
+- `store.ts` refactored: `_project: Project` là SSOT nội bộ
+- Compatibility selectors expose `project`, `subtitles`, `activeStyle`, `overlays` cho components cũ
+- `loadProject` → `legacyToProject()` → internal Project
+- `saveProject` → `projectToLegacy()` → backend (format cũ)
+- Tất cả mutations (subtitle CRUD, style, overlay) operate trên `_project.objects/styles/assets`
+
+**Step 2 — VideoPlayer Refactor:**
+- Replaced inline letterbox math → `updateViewport()`
+- Overlay positioning → `projectToScreen()`
+- Drag/resize inverse → `screenToProject()`
+- Font scaling → `scaleFontSize()`
+
+**Steps 3-5 — SubtitleTable, StylePanel, OverlayPanel:**
+- Không cần thay đổi — compatibility layer expose đúng interface cũ
+- Components hoạt động không thay đổi code
+
+**Step 6 — Cleanup:**
+- Deleted `OverlayViewport.tsx` (unused, merged into VideoPlayer + viewport utilities)
+- Updated `types.ts` header (mark as legacy, point to model/types.ts)
+
+**Files Modified** (2 files):
+- `src/pages/Editor/store.ts` — Full rewrite with Project Model SSOT
+- `src/pages/Editor/VideoPlayer.tsx` — Use viewport utilities
+
+**Files Deleted** (1 file):
+- `src/pages/Editor/OverlayViewport.tsx`
+
+**Context**: Integration Phase COMPLETE. Architecture fully wired.

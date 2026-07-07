@@ -1,6 +1,10 @@
 /**
- * Video Editor — Type Definitions
- * Unit 1: editor-store
+ * Video Editor — Type Definitions (Legacy)
+ *
+ * These types are maintained for backward compatibility with existing components.
+ * The canonical type definitions now live in ./model/types.ts
+ *
+ * New code should import from "./model" instead of this file.
  */
 
 // ─── Subtitle Types ──────────────────────────────────────────────
