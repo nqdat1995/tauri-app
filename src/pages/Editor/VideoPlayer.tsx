@@ -199,7 +199,7 @@ export function VideoPlayer() {
             else { const p=cfg.path as string; const opacity=(cfg.opacity as number ?? 100)/100; visual=p?<img src={p} className="ob-img" style={{opacity}} alt=""/>:<div className="ob-placeholder">{ti?.icon} {ti?.label}</div>; }
 
             return (
-              <Rnd key={item.id} position={{x,y}} size={{width:rndW,height:rndH}} bounds="parent" enableResizing={resizeCfg} lockAspectRatio={item.type==="logo"||item.type==="watermark"}
+              <Rnd key={`${item.id}-${Math.round(bounds.w)}`} position={{x,y}} size={{width:rndW,height:rndH}} bounds="parent" enableResizing={resizeCfg} lockAspectRatio={item.type==="logo"||item.type==="watermark"}
                 onDragStart={()=>setGuides(true)}
                 onDragStop={(_e,d)=>{
                   const s=snap(d.x,d.y,typeof rndW==="number"?rndW:w,typeof rndH==="number"?rndH:h,bounds.w,bounds.h);
@@ -225,8 +225,10 @@ export function VideoPlayer() {
             const subScreenPos = projectToScreen(subDesignPos, viewport);
             const subScreenSize = projectToScreen({ x: SUB_DESIGN_WIDTH, y: 0 }, viewport);
             const subScreenWidth = subScreenSize.x;
+            // Key includes viewport dimensions to force react-rnd remount on resize/fullscreen
+            const subKey = `sub-${Math.round(bounds.w)}-${Math.round(bounds.h)}`;
             return (
-              <Rnd position={{x: subScreenPos.x, y: subScreenPos.y}} size={{width:subScreenWidth, height:"auto"}} bounds="parent" enableResizing={false}
+              <Rnd key={subKey} position={{x: subScreenPos.x, y: subScreenPos.y}} size={{width:subScreenWidth, height:"auto"}} bounds="parent" enableResizing={false}
                 onDragStart={()=>setGuides(true)}
                 onDragStop={(_e,d)=>{
                   const snapped = snap(d.x, d.y, subScreenWidth, 50, bounds.w, bounds.h);
