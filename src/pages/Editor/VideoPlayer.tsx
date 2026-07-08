@@ -33,9 +33,9 @@ export function VideoPlayer() {
   const mirrorAnimRef = useRef<number>(0);
   const [muted, setMuted] = useState(false);
   const [viewport, setViewport] = useState<Viewport>({ containerWidth: 0, containerHeight: 0, displayWidth: 0, displayHeight: 0, offsetX: 0, offsetY: 0, scaleX: 0, scaleY: 0 });
-  const [subPos, setSubPos] = useState({ x: 0, y: 0 });
-  const [subInit, setSubInit] = useState(false);
   const [guides, setGuides] = useState(false);
+  // Subtitle position in DESIGN coordinates (1920×1080) — not viewport pixels
+  const [subDesignPos, setSubDesignPos] = useState<{ x: number; y: number } | null>(null);
 
   const project = useEditorStore((s) => s.project);
   const currentTime = useEditorStore((s) => s.currentTime);
@@ -82,6 +82,12 @@ export function VideoPlayer() {
   useEffect(() => { const handler = () => { recalcViewport(); setTimeout(recalcViewport, 100); setTimeout(recalcViewport, 300); }; document.addEventListener("fullscreenchange", handler); return () => document.removeEventListener("fullscreenchange", handler); }, [recalcViewport]);
   // ResizeObserver for reliable updates when container size changes
   useEffect(() => { const container = boundsRef.current?.parentElement; if (!container) return; const ro = new ResizeObserver(() => { recalcViewport(); }); ro.observe(container); return () => ro.disconnect(); }, [recalcViewport]);
+  // Initialize subtitle design position (design coords: 10% from left, 82% from top)
+  useEffect(() => {
+    if (!subDesignPos) {
+      setSubDesignPos({ x: Math.round(1920 * 0.1), y: Math.round(1080 * 0.82) });
+    }
+  }, [subDesignPos]);
   // Mirror effect: canvas-based frame sampling
   useEffect(() => {
     const v = videoRef.current;
@@ -111,16 +117,6 @@ export function VideoPlayer() {
     drawMirrors();
     return () => { running = false; cancelAnimationFrame(mirrorAnimRef.current); };
   }, []);
-  useEffect(() => { if (bounds.w > 0 && !subInit) { setSubPos({ x: bounds.w * 0.1, y: bounds.h * 0.82 }); setSubInit(true); } }, [bounds, subInit]);
-  // Keep subtitle position proportional when bounds change
-  const prevBoundsRef = useRef({ w: 0, h: 0 });
-  useEffect(() => {
-    const prev = prevBoundsRef.current;
-    if (subInit && prev.w > 0 && prev.h > 0 && bounds.w > 0 && bounds.h > 0 && (prev.w !== bounds.w || prev.h !== bounds.h)) {
-      setSubPos((p) => ({ x: (p.x / prev.w) * bounds.w, y: (p.y / prev.h) * bounds.h }));
-    }
-    prevBoundsRef.current = { w: bounds.w, h: bounds.h };
-  }, [bounds, subInit]);
   useEffect(() => { const v = videoRef.current; if (!v) return; const t = () => setCurrentTime(v.currentTime); const e = () => setPlaying(false); v.addEventListener("timeupdate", t); v.addEventListener("ended", e); return () => { v.removeEventListener("timeupdate", t); v.removeEventListener("ended", e); }; }, [setCurrentTime, setPlaying]);
 
   const playPause = useCallback(() => { const v = videoRef.current; if (v) { if (isPlaying) v.pause(); else v.play().catch(()=>{}); } setPlaying(!isPlaying); }, [isPlaying, setPlaying]);
@@ -139,10 +135,6 @@ export function VideoPlayer() {
     }
     return true;
   });
-
-  // Use viewport scale factors (from new utility)
-  const scaleX = viewport.scaleX || 0.001;
-  const scaleY = viewport.scaleY || 0.001;
 
   // Subtitle font size: scale using viewport utility
   const scaledSubFontSize = scaleFontSize(activeStyle.fontSize * 2, viewport, 12);
@@ -174,7 +166,8 @@ export function VideoPlayer() {
             // Use viewport utilities for coordinate conversion
             const screenPos = projectToScreen({ x: item.position.x, y: item.position.y }, viewport);
             const x = screenPos.x, y = screenPos.y;
-            const w = Math.max(30, item.size.width * scaleX), h = Math.max(30, item.size.height * scaleY);
+            const screenSize = projectToScreen({ x: item.size.width, y: item.size.height }, viewport);
+            const w = Math.max(30, screenSize.x), h = Math.max(30, screenSize.y);
             if(isNaN(x)||isNaN(y)) return null;
             const isText=item.type==="text";
             const resizeCfg = isText ? false : { top:false,right:false,bottom:false,left:false,topRight:false,bottomRight:true,bottomLeft:false,topLeft:false };
@@ -220,14 +213,24 @@ export function VideoPlayer() {
             );
           })}
 
-          {/* Subtitle */}
-          {activeCue && bounds.w > 0 && (
-            <Rnd position={subPos} size={{width:bounds.w*0.8,height:subHeight}} bounds="parent" enableResizing={false}
-              onDragStart={()=>setGuides(true)} onDragStop={(_e,d)=>{ setSubPos(snap(d.x,d.y,bounds.w*0.8,subHeight,bounds.w,bounds.h)); setGuides(false); }}
-              className="vp-sub-rnd">
-              <div style={subStyle} className="vp-sub-text">{activeCue.translatedText}</div>
-            </Rnd>
-          )}
+          {/* Subtitle — position in design coords, converted to screen via viewport */}
+          {activeCue && bounds.w > 0 && subDesignPos && (() => {
+            const subScreenPos = projectToScreen(subDesignPos, viewport);
+            const subScreenWidth = bounds.w * 0.8;
+            return (
+              <Rnd position={{x: subScreenPos.x, y: subScreenPos.y}} size={{width:subScreenWidth,height:subHeight}} bounds="parent" enableResizing={false}
+                onDragStart={()=>setGuides(true)}
+                onDragStop={(_e,d)=>{
+                  const snapped = snap(d.x, d.y, subScreenWidth, subHeight, bounds.w, bounds.h);
+                  const designPos = screenToProject({ x: snapped.x, y: snapped.y }, viewport);
+                  setSubDesignPos(designPos);
+                  setGuides(false);
+                }}
+                className="vp-sub-rnd">
+                <div style={subStyle} className="vp-sub-text">{activeCue.translatedText}</div>
+              </Rnd>
+            );
+          })()}
         </div>
       </div>
 
