@@ -220,25 +220,48 @@ export function VideoPlayer() {
             );
           })}
 
-          {/* Subtitle — position in design coords, converted to screen via viewport */}
+          {/* Subtitle — position in design coords, rendered with absolute positioning */}
           {activeCue && bounds.w > 0 && subDesignPos && (() => {
             const subScreenPos = projectToScreen(subDesignPos, viewport);
             const subScreenSize = projectToScreen({ x: SUB_DESIGN_WIDTH, y: 0 }, viewport);
             const subScreenWidth = subScreenSize.x;
-            // Key includes viewport dimensions to force react-rnd remount on resize/fullscreen
-            const subKey = `sub-${Math.round(bounds.w)}-${Math.round(bounds.h)}`;
             return (
-              <Rnd key={subKey} position={{x: subScreenPos.x, y: subScreenPos.y}} size={{width:subScreenWidth, height:"auto"}} bounds="parent" enableResizing={false}
-                onDragStart={()=>setGuides(true)}
-                onDragStop={(_e,d)=>{
-                  const snapped = snap(d.x, d.y, subScreenWidth, 50, bounds.w, bounds.h);
-                  const designPos = screenToProject({ x: snapped.x, y: snapped.y }, viewport);
-                  setSubDesignPos(designPos);
-                  setGuides(false);
+              <div
+                className="vp-sub-rnd"
+                style={{
+                  position: "absolute",
+                  left: `${subScreenPos.x}px`,
+                  top: `${subScreenPos.y}px`,
+                  width: `${subScreenWidth}px`,
                 }}
-                className="vp-sub-rnd">
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  const startX = e.clientX;
+                  const startY = e.clientY;
+                  setGuides(true);
+                  const onMove = (ev: MouseEvent) => {
+                    const dx = ev.clientX - startX;
+                    const dy = ev.clientY - startY;
+                    // Convert delta from screen to design
+                    const newScreenX = subScreenPos.x + dx;
+                    const newScreenY = subScreenPos.y + dy;
+                    const newDesign = screenToProject({ x: newScreenX, y: newScreenY }, viewport);
+                    // Clamp to design bounds
+                    newDesign.x = Math.max(0, Math.min(1920 - SUB_DESIGN_WIDTH, newDesign.x));
+                    newDesign.y = Math.max(0, Math.min(1080 - 80, newDesign.y));
+                    setSubDesignPos(newDesign);
+                  };
+                  const onUp = () => {
+                    setGuides(false);
+                    window.removeEventListener("mousemove", onMove);
+                    window.removeEventListener("mouseup", onUp);
+                  };
+                  window.addEventListener("mousemove", onMove);
+                  window.addEventListener("mouseup", onUp);
+                }}
+              >
                 <div style={subStyle} className="vp-sub-text">{activeCue.translatedText}</div>
-              </Rnd>
+              </div>
             );
           })()}
         </div>
