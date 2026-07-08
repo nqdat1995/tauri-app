@@ -162,7 +162,7 @@
 
 /* Draggable subtitle on video */
 .vp-sub-rnd { z-index: 5 !important; cursor: move !important; pointer-events: auto !important; display: flex !important; align-items: center; justify-content: center; }
-.vp-sub-text { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vp-sub-text { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: pre-wrap; word-break: break-word; text-align: center; }
 
 
 /* Subtitle time inputs */

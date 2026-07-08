@@ -113,7 +113,7 @@ export function StylePanel({ onTabChange, activeTab, children }: StylePanelProps
                 KÍCH THƯỚC <span className="style-panel__value">{activeStyle.fontSize}px</span>
               </label>
               <input
-                type="range" className="style-panel__slider" min="12" max="48"
+                type="range" className="style-panel__slider" min="5" max="72"
                 value={activeStyle.fontSize}
                 onChange={(e) => updateStyle({ fontSize: parseInt(e.target.value, 10) })}
                 data-testid="style-panel-font-size"

@@ -136,8 +136,14 @@ export function VideoPlayer() {
     return true;
   });
 
-  // Subtitle font size: scale using viewport utility
-  const scaledSubFontSize = scaleFontSize(activeStyle.fontSize * 2, viewport, 12);
+  // Subtitle font size: scale using viewport utility, clamped to design range 5–72
+  // Legacy compat: existing presets store fontSize at half-size (14 means 28px at 1080p)
+  // Multiply by 2 to get actual design-space size, then scale to viewport
+  const clampedDesignFontSize = Math.max(5, Math.min(72, activeStyle.fontSize));
+  const scaledSubFontSize = scaleFontSize(clampedDesignFontSize * 2, viewport, 8);
+
+  // Subtitle uses a fixed width in DESIGN space (80% of 1920 = 1536px design)
+  const SUB_DESIGN_WIDTH = 1536;
 
   const subStyle: React.CSSProperties = activeCue ? {
     fontFamily: activeStyle.fontFamily, fontSize: `${scaledSubFontSize}px`, color: activeStyle.textColor,
@@ -145,10 +151,11 @@ export function VideoPlayer() {
     borderRadius: activeStyle.bgShape==="rounded"?"6px":activeStyle.bgShape==="box"?"3px":"0",
     padding: activeStyle.bgShape!=="none"?"6px 18px":"4px",
     textShadow: activeStyle.bgShape==="none"?"0 1px 3px rgba(0,0,0,0.8)":"none",
-    maxWidth:"100%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600, pointerEvents:"none", userSelect:"none",
-    lineHeight: "1.4",
+    maxWidth:"100%", overflow:"hidden",
+    whiteSpace:"pre-wrap", wordBreak:"break-word",
+    fontWeight:600, pointerEvents:"none", userSelect:"none",
+    lineHeight: "1.4", textAlign: "center",
   } : {};
-  const subHeight = Math.max(30, scaledSubFontSize * 1.4 + 16);
 
   return (
     <div className="video-player">
@@ -216,12 +223,13 @@ export function VideoPlayer() {
           {/* Subtitle — position in design coords, converted to screen via viewport */}
           {activeCue && bounds.w > 0 && subDesignPos && (() => {
             const subScreenPos = projectToScreen(subDesignPos, viewport);
-            const subScreenWidth = bounds.w * 0.8;
+            const subScreenSize = projectToScreen({ x: SUB_DESIGN_WIDTH, y: 0 }, viewport);
+            const subScreenWidth = subScreenSize.x;
             return (
-              <Rnd position={{x: subScreenPos.x, y: subScreenPos.y}} size={{width:subScreenWidth,height:subHeight}} bounds="parent" enableResizing={false}
+              <Rnd position={{x: subScreenPos.x, y: subScreenPos.y}} size={{width:subScreenWidth, height:"auto"}} bounds="parent" enableResizing={false}
                 onDragStart={()=>setGuides(true)}
                 onDragStop={(_e,d)=>{
-                  const snapped = snap(d.x, d.y, subScreenWidth, subHeight, bounds.w, bounds.h);
+                  const snapped = snap(d.x, d.y, subScreenWidth, 50, bounds.w, bounds.h);
                   const designPos = screenToProject({ x: snapped.x, y: snapped.y }, viewport);
                   setSubDesignPos(designPos);
                   setGuides(false);
