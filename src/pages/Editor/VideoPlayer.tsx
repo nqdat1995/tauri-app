@@ -162,7 +162,6 @@ export function VideoPlayer() {
     fontWeight:600, pointerEvents:"none", userSelect:"none",
     lineHeight: "1.4", textAlign: "center",
   } : {};
-  const subHeight = Math.max(30, scaledSubFontSize * 1.4 + 16);
 
   return (
     <div className="video-player">
@@ -229,13 +228,17 @@ export function VideoPlayer() {
 
           {/* Subtitle — uses react-rnd with viewport-pixel positioning + proportional scale */}
           {/* Key includes bounds + fontSize to force remount when viewport or style changes */}
-          {activeCue && bounds.w > 0 && (
-            <Rnd key={`sub-${Math.round(bounds.w)}-${Math.round(bounds.h)}-${clampedFontSize}`} position={subPos} size={{width:bounds.w*0.8,height:subHeight}} bounds="parent" enableResizing={false}
-              onDragStart={()=>setGuides(true)} onDragStop={(_e,d)=>{ setSubPos(snap(d.x,d.y,bounds.w*0.8,subHeight,bounds.w,bounds.h)); setGuides(false); }}
-              className="vp-sub-rnd">
-              <div style={subStyle} className="vp-sub-text">{activeCue.translatedText}</div>
-            </Rnd>
-          )}
+          {activeCue && bounds.w > 0 && (() => {
+            const subW = bounds.w * 0.8;
+            const subH = Math.max(scaledSubFontSize * 2, 30);
+            return (
+              <Rnd key={`sub-${Math.round(bounds.w)}-${Math.round(bounds.h)}-${clampedFontSize}`} position={subPos} size={{width:subW,height:subH}} bounds="parent" enableResizing={false}
+                onDragStart={()=>setGuides(true)} onDragStop={(_e,d)=>{ setSubPos(snap(d.x,d.y,subW,subH,bounds.w,bounds.h)); setGuides(false); }}
+                className="vp-sub-rnd">
+                <div style={subStyle} className="vp-sub-text">{activeCue.translatedText}</div>
+              </Rnd>
+            );
+          })()}
         </div>
       </div>
 
