@@ -149,7 +149,7 @@ export function VideoPlayer() {
   // Subtitle font size: scale proportionally to viewport height
   // fontSize in style is design value (5–72). At 1080p reference, multiply by 2 for visual size.
   const clampedFontSize = Math.max(5, Math.min(72, activeStyle.fontSize));
-  const scaledSubFontSize = Math.max(8, Math.round(bounds.h * (clampedFontSize / 1080) * 2));
+  const scaledSubFontSize = Math.max(4, Math.round(bounds.h * (clampedFontSize / 1080) * 2));
 
   const subStyle: React.CSSProperties = activeCue ? {
     fontFamily: activeStyle.fontFamily, fontSize: `${scaledSubFontSize}px`, color: activeStyle.textColor,
@@ -228,9 +228,9 @@ export function VideoPlayer() {
           })}
 
           {/* Subtitle — uses react-rnd with viewport-pixel positioning + proportional scale */}
-          {/* Key includes bounds dimensions to force remount when viewport changes (fixes react-rnd ignoring position prop after drag) */}
+          {/* Key includes bounds + fontSize to force remount when viewport or style changes */}
           {activeCue && bounds.w > 0 && (
-            <Rnd key={`sub-${Math.round(bounds.w)}-${Math.round(bounds.h)}`} position={subPos} size={{width:bounds.w*0.8,height:subHeight}} bounds="parent" enableResizing={false}
+            <Rnd key={`sub-${Math.round(bounds.w)}-${Math.round(bounds.h)}-${clampedFontSize}`} position={subPos} size={{width:bounds.w*0.8,height:subHeight}} bounds="parent" enableResizing={false}
               onDragStart={()=>setGuides(true)} onDragStop={(_e,d)=>{ setSubPos(snap(d.x,d.y,bounds.w*0.8,subHeight,bounds.w,bounds.h)); setGuides(false); }}
               className="vp-sub-rnd">
               <div style={subStyle} className="vp-sub-text">{activeCue.translatedText}</div>
