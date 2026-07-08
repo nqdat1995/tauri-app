@@ -228,8 +228,9 @@ export function VideoPlayer() {
           })}
 
           {/* Subtitle — uses react-rnd with viewport-pixel positioning + proportional scale */}
+          {/* Key includes bounds dimensions to force remount when viewport changes (fixes react-rnd ignoring position prop after drag) */}
           {activeCue && bounds.w > 0 && (
-            <Rnd position={subPos} size={{width:bounds.w*0.8,height:subHeight}} bounds="parent" enableResizing={false}
+            <Rnd key={`sub-${Math.round(bounds.w)}-${Math.round(bounds.h)}`} position={subPos} size={{width:bounds.w*0.8,height:subHeight}} bounds="parent" enableResizing={false}
               onDragStart={()=>setGuides(true)} onDragStop={(_e,d)=>{ setSubPos(snap(d.x,d.y,bounds.w*0.8,subHeight,bounds.w,bounds.h)); setGuides(false); }}
               className="vp-sub-rnd">
               <div style={subStyle} className="vp-sub-text">{activeCue.translatedText}</div>
