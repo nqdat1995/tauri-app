@@ -2,8 +2,8 @@
  * VideoPlayer — Video playback with draggable subtitle + overlay items
  * Bounds are enforced to the actual video area (not letterbox).
  *
- * Refactored: Uses viewport utilities for overlay coordinate conversion.
- * Subtitle uses proven viewport-pixel pattern with proportional scaling.
+ * Subtitle uses percentage-based positioning (immune to viewport size changes).
+ * Overlays use design-coordinate conversion via viewport utilities.
  */
 import { useRef, useCallback, useEffect, useState, useMemo } from "react";
 import { Rnd } from "react-rnd";
@@ -34,10 +34,9 @@ export function VideoPlayer() {
   const mirrorAnimRef = useRef<number>(0);
   const [muted, setMuted] = useState(false);
   const [viewport, setViewport] = useState<Viewport>({ containerWidth: 0, containerHeight: 0, displayWidth: 0, displayHeight: 0, offsetX: 0, offsetY: 0, scaleX: 0, scaleY: 0 });
-  // Subtitle position in VIEWPORT PIXELS (proven pattern — proportional scale on bounds change)
-  const [subPos, setSubPos] = useState({ x: 0, y: 0 });
-  const [subInit, setSubInit] = useState(false);
   const [guides, setGuides] = useState(false);
+  // Subtitle position as PERCENTAGE (0–100) of bounds. Immune to viewport changes.
+  const [subPct, setSubPct] = useState({ xPct: 10, yPct: 80 });
 
   const project = useEditorStore((s) => s.project);
   const currentTime = useEditorStore((s) => s.currentTime);
@@ -60,15 +59,11 @@ export function VideoPlayer() {
     const v = videoRef.current;
     const container = boundsRef.current?.parentElement;
     if (!container) return;
-
     const cw = container.clientWidth;
     const ch = container.clientHeight;
     const videoAspect = (v && v.videoWidth) ? (v.videoWidth / v.videoHeight) : (16 / 9);
-
     const vp = updateViewport(cw, ch, videoAspect);
     setViewport(vp);
-
-    // Position the bounds div
     const b = boundsRef.current;
     if (b) {
       b.style.width = `${vp.displayWidth}px`;
@@ -80,12 +75,10 @@ export function VideoPlayer() {
 
   useEffect(() => { const v = videoRef.current; if (!v) return; v.addEventListener("loadedmetadata", recalcViewport); window.addEventListener("resize", recalcViewport); return () => { v.removeEventListener("loadedmetadata", recalcViewport); window.removeEventListener("resize", recalcViewport); }; }, [recalcViewport]);
   useEffect(() => { recalcViewport(); }, [recalcViewport]);
-  // Recalculate on fullscreen change — multiple passes to catch layout settling
   useEffect(() => { const handler = () => { recalcViewport(); setTimeout(recalcViewport, 100); setTimeout(recalcViewport, 300); }; document.addEventListener("fullscreenchange", handler); return () => document.removeEventListener("fullscreenchange", handler); }, [recalcViewport]);
-  // ResizeObserver for reliable updates when container size changes
   useEffect(() => { const container = boundsRef.current?.parentElement; if (!container) return; const ro = new ResizeObserver(() => { recalcViewport(); }); ro.observe(container); return () => ro.disconnect(); }, [recalcViewport]);
 
-  // Mirror effect: canvas-based frame sampling
+  // Mirror effect
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -102,10 +95,7 @@ export function VideoPlayer() {
         const srcW = (pos.w / 1920) * v.videoWidth;
         const srcH = (pos.h / 1080) * v.videoHeight;
         ctx.save();
-        if (pos.rotate180) {
-          ctx.translate(cw, ch);
-          ctx.scale(-1, -1);
-        }
+        if (pos.rotate180) { ctx.translate(cw, ch); ctx.scale(-1, -1); }
         ctx.drawImage(v, srcX, srcY, srcW, srcH, 0, 0, cw, ch);
         ctx.restore();
       });
@@ -114,18 +104,6 @@ export function VideoPlayer() {
     drawMirrors();
     return () => { running = false; cancelAnimationFrame(mirrorAnimRef.current); };
   }, []);
-
-  // Initialize subtitle position (viewport pixels)
-  useEffect(() => { if (bounds.w > 0 && !subInit) { setSubPos({ x: bounds.w * 0.1, y: bounds.h * 0.82 }); setSubInit(true); } }, [bounds, subInit]);
-  // Keep subtitle position proportional when bounds change (fullscreen/resize)
-  const prevBoundsRef = useRef({ w: 0, h: 0 });
-  useEffect(() => {
-    const prev = prevBoundsRef.current;
-    if (subInit && prev.w > 0 && prev.h > 0 && bounds.w > 0 && bounds.h > 0 && (prev.w !== bounds.w || prev.h !== bounds.h)) {
-      setSubPos((p) => ({ x: (p.x / prev.w) * bounds.w, y: (p.y / prev.h) * bounds.h }));
-    }
-    prevBoundsRef.current = { w: bounds.w, h: bounds.h };
-  }, [bounds, subInit]);
 
   useEffect(() => { const v = videoRef.current; if (!v) return; const t = () => setCurrentTime(v.currentTime); const e = () => setPlaying(false); v.addEventListener("timeupdate", t); v.addEventListener("ended", e); return () => { v.removeEventListener("timeupdate", t); v.removeEventListener("ended", e); }; }, [setCurrentTime, setPlaying]);
 
@@ -146,8 +124,7 @@ export function VideoPlayer() {
     return true;
   });
 
-  // Subtitle font size: scale proportionally to viewport height
-  // fontSize in style is design value (5–72). At 1080p reference, multiply by 2 for visual size.
+  // Subtitle font size: proportional to viewport height. Range 5–72 design, * 2 for visual compat.
   const clampedFontSize = Math.max(5, Math.min(72, activeStyle.fontSize));
   const scaledSubFontSize = Math.max(4, Math.round(bounds.h * (clampedFontSize / 1080) * 2));
 
@@ -163,6 +140,17 @@ export function VideoPlayer() {
     lineHeight: "1.4", textAlign: "center",
   } : {};
 
+  // Subtitle drag handler (converts pixels to percentage on drop)
+  const handleSubDragStart = useCallback(() => setGuides(true), []);
+  const handleSubDragStop = useCallback((_e: unknown, d: { x: number; y: number }) => {
+    if (bounds.w <= 0 || bounds.h <= 0) return;
+    const subW = bounds.w * 0.8;
+    const subH = Math.max(scaledSubFontSize * 2, 30);
+    const snapped = snap(d.x, d.y, subW, subH, bounds.w, bounds.h);
+    setSubPct({ xPct: (snapped.x / bounds.w) * 100, yPct: (snapped.y / bounds.h) * 100 });
+    setGuides(false);
+  }, [bounds, scaledSubFontSize]);
+
   return (
     <div className="video-player">
       <div className="video-player__viewport">
@@ -176,7 +164,6 @@ export function VideoPlayer() {
           {bounds.w > 0 && visibleOverlays.map((item) => {
             const ti = OVERLAY_TYPES.find(t=>t.type===item.type);
             const cfg = item.config as Record<string,unknown>;
-            // Use viewport utilities for coordinate conversion
             const screenPos = projectToScreen({ x: item.position.x, y: item.position.y }, viewport);
             const x = screenPos.x, y = screenPos.y;
             const screenSize = projectToScreen({ x: item.size.width, y: item.size.height }, viewport);
@@ -226,15 +213,24 @@ export function VideoPlayer() {
             );
           })}
 
-          {/* Subtitle — uses react-rnd with viewport-pixel positioning + proportional scale */}
-          {/* Key includes bounds + fontSize to force remount when viewport or style changes */}
+          {/* Subtitle — percentage-based position, no react-rnd caching issues */}
           {activeCue && bounds.w > 0 && (() => {
+            // Convert percentage to pixels for current bounds
+            const subX = (subPct.xPct / 100) * bounds.w;
+            const subY = (subPct.yPct / 100) * bounds.h;
             const subW = bounds.w * 0.8;
             const subH = Math.max(scaledSubFontSize * 2, 30);
             return (
-              <Rnd key={`sub-${Math.round(bounds.w)}-${Math.round(bounds.h)}-${clampedFontSize}`} position={subPos} size={{width:subW,height:subH}} bounds="parent" enableResizing={false}
-                onDragStart={()=>setGuides(true)} onDragStop={(_e,d)=>{ setSubPos(snap(d.x,d.y,subW,subH,bounds.w,bounds.h)); setGuides(false); }}
-                className="vp-sub-rnd">
+              <Rnd
+                key={`sub-${Math.round(bounds.w)}-${Math.round(bounds.h)}`}
+                position={{ x: subX, y: subY }}
+                size={{ width: subW, height: subH }}
+                bounds="parent"
+                enableResizing={false}
+                onDragStart={handleSubDragStart}
+                onDragStop={handleSubDragStop}
+                className="vp-sub-rnd"
+              >
                 <div style={subStyle} className="vp-sub-text">{activeCue.translatedText}</div>
               </Rnd>
             );
